@@ -18,6 +18,17 @@
 /* ============================================================
    ============== Function tables for handlers ================
    ============================================================ */
+
+/* Table of top-level state handler */
+    StateHandler handlers[] = {
+        startState,
+        numberState,
+        opState,
+        eofState,
+        errState
+    };
+    
+    /* Table of sub-level operator handler */
 OpHandler opHandlers[] = {
     opStart,
     opEq,
@@ -27,7 +38,7 @@ OpHandler opHandlers[] = {
     //NULL,
     //NULL
 };
-
+    /* Table of sub-level number handler */
 NumHandler numHandlers[] = {
     numStart,
     numInt,
@@ -49,15 +60,6 @@ void lexer(const char *inputString)
 {
     LexerState state = STATE_START;
     LexerInfo lex = { inputString, 0 };
-
-    /* Table of top-level state handlers */
-    StateHandler handlers[] = {
-        startState,
-        numberState,
-        opState,
-        eofState,
-        errState
-    };
 
     /* Main state machine loop */
     while (true)
@@ -165,7 +167,7 @@ void opState(LexerInfo *lxer, LexerState *state)
 /*
     Handles end-of-file condition.
 */
-void eofState(LexerInfo *lxer, LexerState *state)
+void eofState(LexerState *state)
 {
     printf("EOF\n");
     *state = STATE_EOF;
@@ -212,7 +214,7 @@ void numStart(LexerInfo *lxer, NumState *st, TokenType *out)
 */
 void numInt(LexerInfo *lxer, NumState *st, TokenType *out)
 {
-    int intPart = 0;
+    //uint32_t intPart = 0;
 
     while (isdigit(peek(lxer)))
     {
@@ -230,6 +232,7 @@ void numInt(LexerInfo *lxer, NumState *st, TokenType *out)
 
     printf("TOKEN_INT: %d\n", intPart);
     *st = NUM_DONE;
+    intPart = 0;
 }
 
 
@@ -239,16 +242,43 @@ void numInt(LexerInfo *lxer, NumState *st, TokenType *out)
 void numFloat(LexerInfo *lxer, NumState *st, TokenType *out)
 {
     advance(lxer);  /* skip '.' */
+    uint32_t degree = 1;
 
-    if (isdigit(peekNext(lxer)))
+
+    while (*st == NUM_FLOAT)
     {
-        printf("TOKEN_FLOAT\n");
+        char c = peek(lxer);
+        if (isdigit(c))
+        {
+            degree *= 10;
+            intPart = intPart * 10 + (peek(lxer) - '0');
+            //printf("TOKEN_FLOAT: %c\n", c);
+            advance(lxer);
+
+        }
+        else{
+            *st = NUM_DONE;
+            printf("TOKEN_FLOAT: %.2f\n", (float)intPart/degree);
+            //fix this later right now you have to reset intPart to 0 between tokens
+            intPart = 0;
+            return;
+        }
+
+        //printf("TOKEN_FLOAT\n");
+    }
+    
+    *st = NUM_ERR;
+    
+    /*if (isdigit(peekNext(lxer)))
+    {
+        printf("TOKEN_FLOAT?: %c <-\n", peek(lxer));
         *st = NUM_DONE;
     }
     else
     {
         *st = NUM_ERR;
-    }
+    }*/
+
 }
 
 
@@ -259,7 +289,7 @@ void numFloat(LexerInfo *lxer, NumState *st, TokenType *out)
 numTypeRtrn numHandler(LexerInfo *lxer)
 {
     numTypeRtrn result = {0};
-    int intPart = 0;
+    uint32_t intPart = 0;
     bool isFloat = false;
 
     while (isdigit(peek(lxer)) || peek(lxer) == '.')
