@@ -130,7 +130,7 @@ NumHandler numHandlers[] = {
 
 int main()
 {
-    const char *inputString = "1.1+467+36";
+    const char *inputString = "1.1.+467+36";
     lexer(inputString);  
 
     return 0;
@@ -263,14 +263,15 @@ void numFloat(LexerInfo *lxer, NumState *st, TokenType *out)
 
     // this part is where the . is skipped in number state
     char c = advance(lxer);
-    printf("char: %c", c);
+    //printf("char: %c", c);
     if (isdigit(peekNext(lxer)))
     {
         printf("TOKEN_FLOAT\n"); 
         *st = NUM_DONE;
         return;   
-    }else{
-        //*st = NUM_ERR;
+    }else if(!isdigit(peekNext(lxer)) && *st == NUM_FLOAT)
+    {
+        *st = STATE_ERR;
         return;
     }
     
