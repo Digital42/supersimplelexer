@@ -22,30 +22,10 @@
 /* Table of top-level state handler */
     StateHandler handlers[] = {
         startState,
-        numberState,
-        opState,
         eofState,
         errState
     };
     
-    /* Table of sub-level operator handler */
-OpHandler opHandlers[] = {
-    opStart,
-    opEq,
-    //opBang,
-    //opLt,
-   // opGt,
-    //NULL,
-    //NULL
-};
-    /* Table of sub-level number handler */
-NumHandler numHandlers[] = {
-    numStart,
-    numInt,
-    numFloat,
-    //NULL,
-    //NULL
-};
 
 /* ============================================================
    ===================== LEXER ENTRY POINT ====================
@@ -93,84 +73,51 @@ void startState(LexerInfo *lxer, LexerState *state)
 
     if (isdigit(c))
     {
-        *state = STATE_NUMBER;
+        Token numTok = numHandler(lxer);
+        return;
     }
-    else if (isspace(c))
+
+    if (c == ';')
+    {
+
+        Token numTok = {.type = TOKEN_SEMICOL, .value = ';'};
+        printf("TOKEN_SEMICOL: %c\n", numTok.value);
+        advance(lxer);
+        return;
+    }
+
+    if (isspace(c))
     {
         advance(lxer);
+        return;
     }
-    else if (c == '\0')
+    
+    if (c == '\0')
     {
         *state = STATE_EOF;
+        return;
     }
-    else if (strchr("+-*/=!<>", c))
+    
+    if (strchr("+-*/=!<>", c))
     {
-        *state = STATE_OP;
+        Token opTok = opHandler(lxer);
+        printf("TOKEN_OP: %c\n", opTok.value.operator);
+        return;
+
     }
-    else
-    {
-        *state = STATE_ERR;
-    }
+ 
+    *state = STATE_ERR;
+    return;
+
 }
 
 
 /*
-    Handles numeric token parsing by delegating to the
-    number sub-state machine.
+    Handles end-of-file condition. ill probably take this out and handle end of file inside if logic
 */
-void numberState(LexerInfo *lxer, LexerState *state)
-{
-    NumState numState = NUM_START;
-    TokenType tok = TOKEN_ERR;
-
-    while (numState != NUM_DONE && numState != NUM_ERR)
-    {
-        numHandlers[numState](lxer, &numState, &tok);
-    }
-
-    if (numState == NUM_ERR)
-    {
-        printf("TOKEN_ERR at %zu\n", lxer->pos);
-    }
-
-    *state = STATE_START;
-}
-
-
-/*
-    Handles operator parsing using the operator
-    sub-state machine.
-*/
-void opState(LexerInfo *lxer, LexerState *state)
-{
-    OpState opState = OP_START;
-    TokenType tok = TOKEN_ERR;
-
-    while (opState != OP_DONE && opState != OP_ERR)
-    {
-        opHandlers[opState](lxer, &opState, &tok);
-    }
-
-    if (opState == OP_DONE)
-    {
-        printf("TOKEN_OP: %d\n", tok);
-    }
-    else
-    {
-        printf("TOKEN_ERR at %zu\n", lxer->pos);
-    }
-
-    *state = STATE_START;
-}
-
-
-/*
-    Handles end-of-file condition.
-*/
-void eofState(LexerState *state)
+void eofState(LexerInfo *lxer, LexerState *state)
 {
     printf("EOF\n");
-    *state = STATE_EOF;
 }
 
 
@@ -185,115 +132,57 @@ void errState(LexerInfo *lxer, LexerState *state)
     *state = STATE_START;
 }
 
-
-/* ============================================================
-   ================= NUMBER SUB-STATE MACHINE =================
-   ============================================================ */
-
-/*
-    Determines if number begins as integer or float.
-*/
-void numStart(LexerInfo *lxer, NumState *st, TokenType *out)
+Token opHandler(LexerInfo *lxer)
 {
-    char c = peek(lxer);
+    Token result = {0};
 
-    if (isdigit(c))
+    while (strchr("+-*/=!<>", peek(lxer)))
     {
-        *st = NUM_INT;
-    }
-    else
-    {
-        *st = NUM_ERR;
-    }
-}
-
-
-/*
-    Parses the integer portion of a number.
-    May transition to float state if '.' encountered.
-*/
-void numInt(LexerInfo *lxer, NumState *st, TokenType *out)
-{
-    //uint32_t intPart = 0;
-
-    while (isdigit(peek(lxer)))
-    {
-        if (peekNext(lxer) == '.')
+        char c = advance(lxer);
+        switch (c)
         {
-            intPart = intPart * 10 + (peek(lxer) - '0');
-            advance(lxer);
-            *st = NUM_FLOAT;
-            return;
+        case '+':
+            result.type = TOKEN_PLUS;
+            result.value.operator = '+';
+            break;
+
+        case '-':
+            result.type = TOKEN_MINUS;
+            result.value.operator = '-';
+            break;
+
+        case '*':
+            result.type = TOKEN_MUL;
+            result.value.operator = '*';
+            break;
+
+        case '/':
+            result.type = TOKEN_DIV;
+            result.value.operator = '/';
+            break;            
+            
+        default:
+            break;
         }
-
-        intPart = intPart * 10 + (peek(lxer) - '0');
-        advance(lxer);
     }
-
-    printf("TOKEN_INT: %d\n", intPart);
-    *st = NUM_DONE;
-    intPart = 0;
-}
-
-
-/*
-    Parses fractional portion of a float.
-*/
-void numFloat(LexerInfo *lxer, NumState *st, TokenType *out)
-{
-    advance(lxer);  /* skip '.' */
-    uint32_t degree = 1;
-
-
-    while (*st == NUM_FLOAT)
-    {
-        char c = peek(lxer);
-        if (isdigit(c))
-        {
-            degree *= 10;
-            intPart = intPart * 10 + (peek(lxer) - '0');
-            //printf("TOKEN_FLOAT: %c\n", c);
-            advance(lxer);
-
-        }
-        else{
-            *st = NUM_DONE;
-            printf("TOKEN_FLOAT: %.2f\n", (float)intPart/degree);
-            //fix this later right now you have to reset intPart to 0 between tokens
-            intPart = 0;
-            return;
-        }
-
-        //printf("TOKEN_FLOAT\n");
-    }
-    
-    *st = NUM_ERR;
-    
-    /*if (isdigit(peekNext(lxer)))
-    {
-        printf("TOKEN_FLOAT?: %c <-\n", peek(lxer));
-        *st = NUM_DONE;
-    }
-    else
-    {
-        *st = NUM_ERR;
-    }*/
+    return result;
 
 }
-
-
 /*
-    Alternative number parser (standalone).
-    Parses full integer or float in one pass.
+    Parses full integer or float in one pass. This is much vetter then the over engineer nonsese with
+    high level states and sub states for every part of a number 
 */
-numTypeRtrn numHandler(LexerInfo *lxer)
+Token numHandler(LexerInfo *lxer)
 {
-    numTypeRtrn result = {0};
+    Token result = {0};
     uint32_t intPart = 0;
     bool isFloat = false;
 
-    while (isdigit(peek(lxer)) || peek(lxer) == '.')
+
+    while (isdigit(peek(lxer)) || peekNext(lxer) == '.')
     {
+        char c = advance(lxer);
+
         if (peek(lxer) == '.')
         {
             isFloat = true;
@@ -309,62 +198,23 @@ numTypeRtrn numHandler(LexerInfo *lxer)
                 advance(lxer);
             }
 
-            result.floatVal = intPart + fracPart;
-            printf("TOKEN_FLOAT: %.3f\n", result.floatVal);
+            result.type = TOKEN_FLOAT;
+            result.value.tokenFloatVal = intPart + fracPart;
+            printf("TOKEN_FLOAT: %.3f\n", result.value.tokenFloatVal);
             return result;
         }
 
-        intPart = intPart * 10 + (peek(lxer) - '0');
-        advance(lxer);
+        intPart = intPart * 10 + (c - '0');
     }
 
     if (!isFloat)
-        result.intVal = intPart;
+    {
+        result.type = TOKEN_INT;
+        result.value.tokenIntVal = intPart;
+    }
 
-    printf("TOKEN_INT: %d\n", result.intVal);
+    printf("TOKEN_INT: %d\n", result.value.tokenIntVal);
     return result;
-}
-
-
-/* ============================================================
-   ================ OPERATOR SUB-STATE MACHINE ================
-   ============================================================ */
-
-/*
-    Handles first character of operator.
-*/
-void opStart(LexerInfo *lxer, OpState *st, TokenType *out)
-{
-    char c = advance(lxer);
-
-    switch (c)
-    {
-        case '=': *st = OP_EQ; break;
-        case '+': *out = TOKEN_PLUS;  *st = OP_DONE; break;
-        case '-': *out = TOKEN_MINUS; *st = OP_DONE; break;
-        case '*': *out = TOKEN_MUL;   *st = OP_DONE; break;
-        case '/': *out = TOKEN_DIV;   *st = OP_DONE; break;
-        default:  *st = OP_ERR;       break;
-    }
-}
-
-
-/*
-    Handles '=' and '==' tokens.
-*/
-void opEq(LexerInfo *lxer, OpState *st, TokenType *out)
-{
-    if (peek(lxer) == '=')
-    {
-        advance(lxer);
-        *out = TOKEN_EQUAL;
-    }
-    else
-    {
-        *out = TOKEN_ASSIGN;
-    }
-
-    *st = OP_DONE;
 }
 
 
@@ -428,8 +278,7 @@ void lexerState(LexerState state)
     switch (state)
     {
         case STATE_START:  printf("State: start\n"); break;
-        case STATE_NUMBER: printf("State: number\n"); break;
-        case STATE_OP:     printf("State: op\n"); break;
+
         case STATE_EOF:    printf("State: EOF\n"); break;
         case STATE_ERR:    printf("State: error\n"); break;
         default: break;

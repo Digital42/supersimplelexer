@@ -16,7 +16,7 @@ uint32_t intPart = 0;
 int main()
 {
 
-    const char *inputString = "1.11/2+476+7";
+    const char *inputString = "113  + 42;/6- 57";
     lexer(inputString);  
 
     return 0;

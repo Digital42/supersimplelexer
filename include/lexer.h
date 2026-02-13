@@ -43,35 +43,17 @@ extern uint32_t intPart;
      TOKEN_LTE,
      TOKEN_GT,
      TOKEN_GTE,
+     TOKEN_SEMICOL,
      TOKEN_EOF,
      TOKEN_ERR
  } TokenType;
  
  typedef enum {
      STATE_START,
-     STATE_NUMBER,
-     STATE_OP,
      STATE_EOF,
      STATE_ERR
  } LexerState;
  
- typedef enum {
-     OP_START,
-     OP_EQ,
-     OP_BANG,
-     OP_LT,
-     OP_GT,
-     OP_DONE,
-     OP_ERR
- } OpState;
- 
- typedef enum {
-     NUM_START,
-     NUM_INT,
-     NUM_FLOAT,
-     NUM_DONE,
-     NUM_ERR
- } NumState;
  
  
  /* =======================
@@ -79,20 +61,13 @@ extern uint32_t intPart;
     ======================= */
  
  #define NUM_STACK_MAX 8
- 
+ /*
  typedef struct {
      NumState stack[NUM_STACK_MAX];
      int32_t top;
  } NumStateStack;
- 
-// store context for pasring ints/floats
- typedef struct {
-     int32_t intPart;
-     float fracPart;
-     float fracDiv;
-     bool isFloat;
- } NumCtx;
- 
+ */
+
  typedef union {
      int32_t intVal;
      float floatVal;
@@ -103,9 +78,11 @@ extern uint32_t intPart;
      union {
          int32_t tokenIntVal;
          float tokenFloatVal;
+         char operator;
      } value;
  } Token;
  
+
  typedef struct {
      const char *input;
      size_t pos;
@@ -117,8 +94,7 @@ extern uint32_t intPart;
     ======================= */
  
  typedef void (*StateHandler)(LexerInfo *lxer, LexerState *state);
- typedef void (*OpHandler)(LexerInfo *lxer, OpState *state, TokenType *tok);
- typedef void (*NumHandler)(LexerInfo *lxer, NumState *state, TokenType *tok);
+
  
  
  /* =======================
@@ -128,7 +104,7 @@ extern uint32_t intPart;
  void lexer(const char *inputString);
  void lexerState(LexerState state);
  
- numTypeRtrn numHandler(LexerInfo *lxer);
+ Token numHandler(LexerInfo *lxer);
  
  /* Character helpers */
  char peek(LexerInfo *lxer);
@@ -138,34 +114,24 @@ extern uint32_t intPart;
  
  /* Top-level state handlers */
  void startState(LexerInfo *lxer, LexerState *state);
- void numberState(LexerInfo *lxer, LexerState *state);
- void opState(LexerInfo *lxer, LexerState *state);
  void errState(LexerInfo *lxer, LexerState *state);
- void eofState(LexerState *state);
+ void eofState(LexerInfo *lxer, LexerState *state);
  
- /* Operator sub-state handlers */
- void opStart(LexerInfo *lxer, OpState *st, TokenType *out);
- void opEq(LexerInfo *lxer, OpState *st, TokenType *out);
- void opBang(LexerInfo *lxer, OpState *st, TokenType *out);
- void opLt(LexerInfo *lxer, OpState *st, TokenType *out);
- void opGt(LexerInfo *lxer, OpState *st, TokenType *out);
+ Token numHandler(LexerInfo *lxer);
+ Token opHandler(LexerInfo *lxer);
  
- /* Number sub-state handlers */
- void numStart(LexerInfo *lxer, NumState *st, TokenType *out);
- void numInt(LexerInfo *lxer, NumState *st, TokenType *out);
- void numFloat(LexerInfo *lxer, NumState *st, TokenType *out);
- 
- /* Stack helpers */
+ /* Stack helpers 
  void push(NumStateStack *s, NumState st);
  void pop(NumStateStack *s);
  NumState peekNum(NumStateStack *s);
+ */
  
- 
+
  /* =======================
     Extern Global Tables
     ======================= */
  
- extern OpHandler opHandlers[];
- extern NumHandler numHandlers[];
+ //extern OpHandler opHandlers[];
+ //extern NumHandler numHandlers[];
  
  #endif /* LEXER_H */
