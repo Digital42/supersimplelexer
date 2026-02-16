@@ -11,6 +11,7 @@
  
 #include <stddef.h>   // size_t
 #include <stdint.h>   // uint8_t, int32_t
+#include <stdio.h>
  
  /* =======================
         Basic Types
@@ -19,37 +20,38 @@
 typedef uint8_t bool;
 #define true  1
 #define false 0
+#define MAX_IDENT_LEN 10
  
 /* =======================
     Token and State Enums
    ======================= */
  
 typedef enum {
-    TOKEN_IDEN_GENERIC,
-    TOEKEN_KEYWORD,
-    TOKEN_INT,
-    TOKEN_FLOAT,
-    TOKEN_PLUS,
-    TOKEN_MINUS,
-    TOKEN_MUL,
-    TOKEN_DIV,
-    TOKEN_ASSIGN,
-    TOKEN_EQUAL,
-    TOKEN_NOTEQ,
-    TOKEN_LT,
-    TOKEN_LTE,
-    TOKEN_GT,
-    TOKEN_GTE,
-    TOKEN_SEMICOL,
-    TOKEN_EOF,
-    TOKEN_ERR
+    TOKEN_IDEN_GENERIC,     // 0
+    TOKEN_KEYWORD,          // 1
+    TOKEN_INT,              // 2
+    TOKEN_FLOAT,            // 3
+    TOKEN_PLUS,             // 4
+    TOKEN_MINUS,            // 5
+    TOKEN_MUL,              // 6
+    TOKEN_DIV,              // 7
+    TOKEN_ASSIGN,           // 8
+    TOKEN_EQUAL,            // 9
+    TOKEN_NOTEQ,            // 10
+    TOKEN_LT,               // 11
+    TOKEN_LTE,              // 12
+    TOKEN_GT,               // 13
+    TOKEN_GTE,              // 14
+    TOKEN_SEMICOL,          // 15
+    TOKEN_EOF,              // 16
+    TOKEN_ERR,              // 17
+    TOKEN_LBRACK,           // 18
+    TOKEN_RBRACK,           // 19
+    TOKEN_LPAREN,           // 20
+    TOKEN_RPAREN,           // 21
+    TOKEN_STRING,           // 22
+    TOKEN_DELIM             // 23
 } TokenType;
- 
-typedef enum {
-    STATE_START,
-    STATE_EOF,
-    STATE_ERR
-} LexerState;
  
  /* =======================
         Lexer Structs
@@ -57,25 +59,17 @@ typedef enum {
  
 /* Maximum size for numeric stack (unused for now) */
 #define NUM_STACK_MAX 8
-/*
-typedef struct {
-    NumState stack[NUM_STACK_MAX];
-    int32_t top;
-} NumStateStack;
-*/
  
-typedef union {
-    int32_t intVal;
-    float   floatVal;
-} numTypeRtrn;
 
 typedef struct {
     TokenType type;
     union {
-        int32_t tokenIntVal;
-        float   tokenFloatVal;
-        char    operator;
-        char    identifier[10];
+        //change this later maybe not i dunno
+        char identifier[MAX_IDENT_LEN];
+        int tokenIntVal;
+        float tokenFloatVal;
+        char operator;
+        char value; // for simple tokens like ';'
     } value;
 } Token;
  
@@ -84,55 +78,38 @@ typedef struct {
     size_t      pos;    /* Current position in input */
 } LexerInfo;
 
-/* =======================
-    Function Pointer Types
-   ======================= */
-
-/* Pointer to top-level state handler */
-typedef void (*StateHandler)(LexerInfo *lxer, LexerState *state);
 
 /* =======================
           Prototypes
    ======================= */
  
 /* Lexer entry point */
-void lexer(const char *inputString);
+LexerInfo *lexerCreate(const char *inputString);
+Token nextToken(LexerInfo *lxer);
+LexerInfo *lexerCreateFromFile(const char *filename);
+
+bool isKeyWord(const Token *tok);
  
-/* Debug helper */
-void lexerState(LexerState state);
- 
-/* Keyword checking */
-bool isKeyWord(char *identifier);
- 
-/* Character helpers */
+
 char peek(LexerInfo *lxer);
 char peekNext(LexerInfo *lxer);
 char advance(LexerInfo *lxer);
 bool peekEoF(LexerInfo *lxer);
  
-/* Top-level state handlers */
-void startState(LexerInfo *lxer, LexerState *state);
-void errState(LexerInfo *lxer, LexerState *state);
-void eofState(LexerInfo *lxer, LexerState *state);
  
-/* Token handlers */
+
 Token numHandler(LexerInfo *lxer);
 Token opHandler(LexerInfo *lxer);
 Token identHandler(LexerInfo *lxer);
- 
+Token stringHandler(LexerInfo *lxer);
+Token delimHandler(LexerInfo *lxer);
+
  /* Stack helpers (currently unused) */
 /*
 void push(NumStateStack *s, NumState st);
 void pop(NumStateStack *s);
 NumState peekNum(NumStateStack *s);
 */
- 
-/* =======================
-Extern Global Tables (optional)
-   ======================= */
- 
-// extern OpHandler opHandlers[];
-// extern NumHandler numHandlers[];
- 
+void printTokenType(Token tok);
 #endif /* LEXER_H */
  
