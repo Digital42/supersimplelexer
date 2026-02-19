@@ -7,6 +7,7 @@
 * Notes: Definition file for the lexer
 ******************************************************************************/
 #include "lexer.h"
+#include "hash.h"
 //fix this later this double indluce od stdio
 #include <stdio.h>
 #include <ctype.h>
@@ -47,6 +48,123 @@ static char *keyWords[] = {
 /*
    Sandard create lexer return pointer to lexer structure 
 */
+
+Token *createToken(TokenType type)
+{
+    Token *tok = malloc(sizeof(Token));
+    memset(tok, 0, sizeof(Token));
+
+    if (!tok)
+    {
+        return NULL;
+    }
+    
+    switch(type) {
+        case TOKEN_IDEN_GENERIC:
+            tok->type = type;
+            tok->stringVal = NULL;
+            return tok;
+    
+        case TOKEN_KEYWORD:
+            tok->type = type;
+            tok->stringVal = NULL;
+            return tok;
+    
+        case TOKEN_INT:
+            tok->type = type;
+            tok->intVal = 0;
+            return tok;
+    
+        case TOKEN_FLOAT:
+            tok->type = type;
+            tok->floatVal = 0;
+            return tok;
+    
+        case TOKEN_PLUS:
+            // Handle plus operator '+'
+            return (Token*) &(const Token){ .type = TOKEN_SEMICOL, .value = ';' };
+    
+        case TOKEN_MINUS:
+            // Handle minus operator '-'
+            return (Token*) &(const Token){ .type = TOKEN_MINUS, .value = '-' };
+    
+        case TOKEN_MUL:
+            // Handle multiplication operator '*'
+            return (Token*) &(const Token){ .type = TOKEN_MUL, .value = '*' };
+    
+        case TOKEN_DIV:
+            // Handle division operator '/'
+            return (Token*) &(const Token){ .type = TOKEN_DIV, .value = '/' };
+    
+        case TOKEN_ASSIGN:
+            // Handle assignment operator '='
+            return (Token*) &(const Token){ .type = TOKEN_ASSIGN, .value = '=' };
+    
+        case TOKEN_EQUAL:
+            // Handle equality operator '=='
+            return (Token*) &(const Token){ .type = TOKEN_EQUAL, .value = '=' };
+    
+        case TOKEN_NOTEQ:
+            // Handle not-equal operator '!='
+            break;
+    
+        case TOKEN_LT:
+            // Handle less-than operator '<'
+            break;
+    
+        case TOKEN_LTE:
+            // Handle less-than-or-equal operator '<='
+            break;
+    
+        case TOKEN_GT:
+            // Handle greater-than operator '>'
+            break;
+    
+        case TOKEN_GTE:
+            // Handle greater-than-or-equal operator '>='
+            break;
+    
+        case TOKEN_SEMICOL:
+            // Handle semicolon ';'
+            return (Token*) &(const Token){ .type = TOKEN_SEMICOL, .value = ';' };
+    
+        case TOKEN_EOF:
+            // Handle end-of-file
+            return (Token*) &(const Token){ .type = TOKEN_EOF, .value = '\0' };
+    
+        case TOKEN_ERR:
+            return (Token*) &(const Token){ .type = TOKEN_ERR, .value = 'e' };
+
+    
+        case TOKEN_LBRACE:
+            return (Token*) &(const Token){ .type = TOKEN_LBRACE, .value = '{' };
+    
+        case TOKEN_RBRACE:
+            // Handle right brace '}'
+            return (Token*) &(const Token){ .type = TOKEN_RBRACE, .value = '}' };
+    
+        case TOKEN_LPAREN:
+            // Handle left parenthesis '('
+            return (Token*) &(const Token){ .type = TOKEN_LPAREN, .value = '(' };
+    
+        case TOKEN_RPAREN:
+            // Handle right parenthesis ')'
+            return (Token*) &(const Token){ .type = TOKEN_RPAREN, .value = ')' };
+    
+        case TOKEN_STRING:
+            tok->type = type;
+            tok->stringVal = NULL;
+            return tok;
+
+    
+        case TOKEN_DELIM:
+            return (Token*) &(const Token){ .type = TOKEN_DELIM, .value = ' ' };
+
+        default:
+            return (Token*) &(const Token){ .type = TOKEN_UNKOWN, .value = '?' };
+    }
+}
+
 LexerInfo *lexerCreate(const char *inputString)
 {
     LexerInfo *lex = malloc(sizeof(LexerInfo));
@@ -97,26 +215,26 @@ LexerInfo *lexerCreateFromFile(const char *filename)
     Determines the type of token starting at the current position.
     Transitions into NUMBER, OP, EOF, or ERR states.
 */
-Token nextToken(LexerInfo *lxer)
+Token *nextToken(LexerInfo *lxer)
 {
     char c = peek(lxer);
 
     if (isspace(c))
     {
         
-        Token delimTok = delimHandler(lxer);
+        Token *delimTok = delimHandler(lxer);
         return delimTok;
     }
  
     if (isdigit(c))
     {
-        Token numTok = numHandler(lxer);
+        Token *numTok = numHandler(lxer);
         return numTok;
     }
  
     if (isalpha(c))
     {
-        Token identTok = identHandler(lxer);
+        Token *identTok = identHandler(lxer);
         //printf("TOKEN_IDENT: %s\t", identTok.value.identifier);
         //printf("TYPE: %d\n", identTok.type);        
         return identTok;
@@ -124,14 +242,14 @@ Token nextToken(LexerInfo *lxer)
     
     if (c == '"')
     {
-        Token stringTok = stringHandler(lxer);
+        Token *stringTok = stringHandler(lxer);
         return stringTok;
     }
     
  
     if (c == ';')
     {
-        Token semTok = { .type = TOKEN_SEMICOL, .value.value = ';' };
+        Token *semTok = createToken(TOKEN_SEMICOL);
         //printf("TOKEN_SEMICOL: %c\n", semTok.value);
         advance(lxer);
         return semTok;
@@ -147,7 +265,7 @@ Token nextToken(LexerInfo *lxer)
 
     if (c == '(')
     {
-        Token lParen = { .type = TOKEN_LPAREN, .value.value = '(' };
+        Token *lParen = createToken(TOKEN_LPAREN);
         //printf("TOKEN_LPAREN: %c\n", lParen.value);
         advance(lxer);
         return lParen;
@@ -155,43 +273,43 @@ Token nextToken(LexerInfo *lxer)
 
     if (c == ')')
     {
-        Token rParen = { .type = TOKEN_RPAREN, .value.value = ')' };
-        //printf("TOKEN_RPAREN: %c\n", rParen.value);
+        Token *rParen = createToken(TOKEN_RPAREN);
+        //printf("TOKEN_LPAREN: %c\n", lParen.value);
         advance(lxer);
         return rParen;
     }   
 
     if (c == '{')
     {
-        Token lBrackTok = { .type = TOKEN_LBRACK, .value.value = '{' };
+        Token *lBraceTok = createToken(TOKEN_LBRACE);
         //printf("TOKEN_LBRACK: %c\n", lBrackTok.value);
         advance(lxer);
-        return lBrackTok;
+        return lBraceTok;
     }
 
     if (c == '}')
     {
-        Token rBrackTok = { .type = TOKEN_RBRACK, .value.value = '}' };
-        //printf("TOKEN_LBRACK: %c\n", rBrackTok.value);
+        Token *rBraceTok = createToken(TOKEN_RBRACE);
+        //printf("TOKEN_LBRACK: %c\n", lBrackTok.value);
         advance(lxer);
-        return rBrackTok;
+        return rBraceTok;
     }
  
     if (c == '\0')
     {
-        Token eof = { .type = TOKEN_EOF, .value.value = '\0' };
+        Token *eof = createToken(TOKEN_EOF);
 
         return eof;
     }
  
     if (strchr("+-*/=!<>", c))
     {
-        Token opTok = opHandler(lxer);
+        Token *opTok = opHandler(lxer);
         //printf("TOKEN_OP: %c\n", opTok.value.operator);
         return opTok;
     }
  
-    Token err = { .type = TOKEN_ERR, .value.value = 'e' };
+    Token *err = createToken(TOKEN_ERR);
     return err;
 }
  
@@ -205,10 +323,10 @@ Token nextToken(LexerInfo *lxer)
     Handles spaces and delimiters
 */
 
-Token delimHandler(LexerInfo *lxer)
+Token *delimHandler(LexerInfo *lxer)
 {
     int count = 0;
-    Token result = {0};
+    Token *tok = createToken(TOKEN_DELIM); 
     do
     {
         
@@ -217,113 +335,134 @@ Token delimHandler(LexerInfo *lxer)
     
     } while (isspace(peek(lxer)) && !peekEoF(lxer));
     
-    result.type = TOKEN_DELIM;
-    result.value.value = count;
+    tok->value = count;
 
-    return result;
+    return tok;
 }
 
 /*
     Handles strings that start and end with "."
 */
 
-Token stringHandler(LexerInfo *lxer)
+Token *stringHandler(LexerInfo *lxer)
 {
+    size_t buffer = 64;
     size_t i = 0;
-    Token result = {0};
+    Token *tok = createToken(TOKEN_STRING);
+    tok->stringVal = malloc(buffer);
     //have to advance here to skip the string fix this latter maybe using peekNext?
     advance(lxer);
     //printf("TOKEN_STRING: ");
     while(peek(lxer) != '"' && !peekEoF(lxer))
     {
-        if (i < MAX_IDENT_LEN - 1) {
-            result.value.identifier[i++] = advance(lxer);
-        } else {
-            advance(lxer);
+        if (i+1 >= buffer) {
+            buffer *= 2;
+            char *newBuf = realloc(tok->stringVal, buffer);
+            if (!newBuf)
+            {
+                free(tok->stringVal); 
+                free(tok); 
+                return NULL;                 
+            }
+            
+            tok->stringVal = newBuf;
         }
+        tok->stringVal[i++] = advance(lxer);
     }
 
-    result.value.identifier[i] = '\0';
+    tok->stringVal[i] = '\0';
     //printf("\n");
-    //have to advance here to skip the string fix this latter maybe using peekNext?   
     advance(lxer);
-    result.type = TOKEN_STRING;
-    return result;
+    //have to advance here to skip the string fix this latter maybe using peekNext?   
+  
+
+    return tok;
 }
 
 /*
     Handles identifiers (alphanumeric tokens starting with a letter).
 */
 
-Token identHandler(LexerInfo *lxer)
+Token *identHandler(LexerInfo *lxer)
 {
-    Token result = {0};
-    uint32_t count = 0;
- 
-    /* Hard limit of 10 characters for identifier gonna try and experiment 
-       with dynamic allocation later                                       */
-    do
+    size_t buffer = 32;
+    Token *tok = createToken(TOKEN_IDEN_GENERIC);
+    tok->stringVal = malloc(buffer);
+    size_t i = 0;
+
+    if (!tok)
     {
-        if (count > MAX_IDENT_LEN - 1)
-        {
-            printf("Identifier too long, truncating.\n");
-            if (isKeyWord(&result))
+        return NULL;
+    }
+
+    while(!peekEoF(lxer) && (isalpha(peek(lxer)) || isdigit(peek(lxer))))
+    {
+        if (i+1 >= buffer) {
+            buffer *= 2;
+            char *newBuf = realloc(tok->stringVal, buffer);
+            if (!newBuf)
             {
-                result.type = TOKEN_KEYWORD;
-                return result;
-            }else{
-                result.type = TOKEN_IDEN_GENERIC;
-                return result;
+                free(tok->stringVal); 
+                free(tok); 
+                return NULL;                 
             }
             
+            tok->stringVal = newBuf;
         }
- 
-        char c = advance(lxer);
-        result.value.identifier[count] = c;
-        count++;
-    } while (!peekEoF(lxer) && (isalpha(peek(lxer)) || isdigit(peek(lxer))));
- 
-    if (isKeyWord(&result))
-    {
-        result.type = TOKEN_KEYWORD;
-        return result;
-    }else{
-        result.type = TOKEN_IDEN_GENERIC;
-        return result;
+        tok->stringVal[i++] = advance(lxer);
     }
+
+    tok->stringVal[i] = '\0';
+    //printf("\n");
+    //advance(lxer);
+    //have to advance here to skip the string fix this latter maybe using peekNext?   
+  
+    if (lookUp(tok->stringVal))
+    {
+        tok->type = TOKEN_KEYWORD;
+    }else{
+        tok->type = TOKEN_IDEN_GENERIC;
+    }
+    
+    return tok;
+    
 }
  
 /*
     Handles operators: +, -, *, /, =, !, <, >
 */
-Token opHandler(LexerInfo *lxer)
+Token *opHandler(LexerInfo *lxer)
 {
-    Token result = {0};
+    
  
     while (strchr("+-*/=!<>", peek(lxer)))
     {
+        Token *tok;
         char c = advance(lxer);
         switch (c)
         {
-            case '+': result.type = TOKEN_PLUS;  result.value.operator = '+'; break;
-            case '-': result.type = TOKEN_MINUS; result.value.operator = '-'; break;
-            case '*': result.type = TOKEN_MUL;   result.value.operator = '*'; break;
-            case '/': result.type = TOKEN_DIV;   result.value.operator = '/'; break;
-            case '=': result.type = TOKEN_EQUAL; result.value.operator = '='; break;
-            default: break;
+            case '+': tok = createToken(TOKEN_PLUS);    return tok;
+
+            case '-': tok = createToken(TOKEN_MINUS);   return tok;
+
+            case '*': tok = createToken(TOKEN_MUL);     return tok;   
+
+            case '/': tok = createToken(TOKEN_DIV);     return tok;
+
+            case '=': tok = createToken(TOKEN_ASSIGN);  return tok;
+
+            default:  tok = createToken(TOKEN_ERR);     return tok;
         }
     }
- 
-    return result;
 }
  
 /*
     Parses a full integer or floating-point number in one pass.
     This avoids over-engineered sub-states for numbers.
 */
-Token numHandler(LexerInfo *lxer)
+Token *numHandler(LexerInfo *lxer)
 {
-    Token result = {0};
+    Token *tok = createToken(TOKEN_INT);
     uint32_t intPart = 0;
     bool isFloat = false;
  
@@ -347,40 +486,24 @@ Token numHandler(LexerInfo *lxer)
                 advance(lxer);
             }
  
-            result.type = TOKEN_FLOAT;
-            result.value.tokenFloatVal = intPart + fracPart;           
+            tok->type = TOKEN_FLOAT;
+            tok->floatVal = intPart + fracPart;           
             //printf("TOKEN_FLOAT: %.5f\n", result.value.tokenFloatVal);
-            return result;
+            return tok;
         }
         intPart = intPart * 10 + (c - '0');
     }
  
     if (!isFloat)
     {
-        result.type = TOKEN_INT;
-        result.value.tokenIntVal = intPart;
+        tok->type = TOKEN_INT;
+        tok->intVal = intPart;
         //printf("TOKEN_INT: %d\n", result.value.tokenIntVal);
     }
  
-    return result;
+    return tok;
 }
  
-/*
-    Checks if an identifier matches a reserved keyword.
-*/
-bool isKeyWord(const Token *tok)
-{
-    size_t numElms = sizeof(keyWords) / sizeof(keyWords[0]);
- 
-    for (size_t i = 0; i < numElms; i++)
-    {
-        if (strcmp(tok->value.identifier, keyWords[i]) == 0)
-        {
-            return true;
-        }
-    }
-    return false; 
-}
  
 /* ============================================================
    ===================== CHARACTER HELPERS ====================
@@ -430,46 +553,47 @@ bool peekEoF(LexerInfo *lxer)
    ======================= DEBUG HELPERS ======================
    ============================================================ */
 /*
-    Debug utility to print current state name.
+    Debug utility to print current state name. delete as they 
+    are no longer needed
 */
 
-void printTokenType(Token tok) {
-    switch (tok.type) {
+void printTokenType(Token *tok) {
+    switch (tok->type) {
         case TOKEN_IDEN_GENERIC: 
-            printf("TOKEN_IDEN_GENERIC\n -> %s\n", tok.value.identifier); 
+            printf("TOKEN_IDEN_GENERIC\n -> %s\n", tok->stringVal); 
             break;
         case TOKEN_KEYWORD:      
-            printf("TOKEN_KEYWORD\n -> %s\n", tok.value.identifier);
+            printf("TOKEN_KEYWORD\n -> %s\n", tok->stringVal);
             break;
         case TOKEN_INT:          
-            printf("TOKEN_INT\n -> %d\n", tok.value.tokenIntVal);
+            printf("TOKEN_INT\n -> %d\n", tok->intVal);
             break;
 
         case TOKEN_FLOAT:        
-            printf("TOKEN_FLOAT\n -> %.f\n", tok.value.tokenFloatVal);
+            printf("TOKEN_FLOAT\n -> %.f\n", tok->floatVal);
             break;
 
         case TOKEN_PLUS:         
-            printf("TOKEN_PLUS\n -> %c\n", tok.value.value);
+            printf("TOKEN_PLUS\n -> %c\n", tok->value);
             break;
 
         case TOKEN_MINUS:        
-            printf("TOKEN_MINUS\n -> %c\n", tok.value.operator); 
+            printf("TOKEN_MINUS\n -> %c\n", tok->value); 
             break;
 
         case TOKEN_MUL:          
-            printf("TOKEN_MUL\n -> %c\n", tok.value.operator); 
+            printf("TOKEN_MUL\n -> %c\n", tok->value); 
             break;
         case TOKEN_DIV:          
-            printf("TOKEN_DIV\n -> %c\n", tok.value.operator); 
+            printf("TOKEN_DIV\n -> %c\n", tok->value); 
             break;
 
         case TOKEN_ASSIGN:       
-            printf("TOKEN_ASSIGN\n -> %c\n", tok.value.operator);
+            printf("TOKEN_ASSIGN\n -> %c\n", tok->value);
             break;
 
         case TOKEN_EQUAL:        
-            printf("TOKEN_EQUAL\n -> %c\n", tok.value.operator); 
+            printf("TOKEN_EQUAL\n -> %c\n", tok->value); 
             break;
         case TOKEN_NOTEQ:        
             printf("TOKEN_NOTEQ\n"); 
@@ -492,7 +616,7 @@ void printTokenType(Token tok) {
             break;
 
         case TOKEN_SEMICOL:      
-            printf("TOKEN_SEMICOL\n -> %c\n", tok.value.value);
+            printf("TOKEN_SEMICOL\n -> %c\n", tok->value);
             break;
         
         case TOKEN_EOF:          
@@ -503,24 +627,24 @@ void printTokenType(Token tok) {
             printf("TOKEN_ERR\n"); 
             break;
 
-        case TOKEN_LBRACK:       
-            printf("TOKEN_LBRACK\n -> %c\n", tok.value.value);
+        case TOKEN_LBRACE:       
+            printf("TOKEN_LBRACK\n -> %c\n", tok->value);
             break;
 
-        case TOKEN_RBRACK:       
-            printf("TOKEN_RBRACK\n -> %c\n", tok.value.value);
+        case TOKEN_RBRACE:       
+            printf("TOKEN_RBRACK\n -> %c\n", tok->value);
             break;
 
         case TOKEN_LPAREN:
-            printf("TOKEN_LPAREN\n -> %c\n", tok.value.value);
+            printf("TOKEN_LPAREN\n -> %c\n", tok->value);
             break;
 
         case TOKEN_RPAREN:       
-            printf("TOKEN_RPAREN\n -> %c\n", tok.value.value); 
+            printf("TOKEN_RPAREN\n -> %c\n", tok->value); 
             break;
 
         case TOKEN_STRING:       
-            printf("TOKEN_STRING\n -> %s\n", tok.value.identifier); 
+            printf("TOKEN_STRING\n -> %s\n", tok->stringVal); 
             break;
 
         case TOKEN_DELIM:        

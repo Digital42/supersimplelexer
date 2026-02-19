@@ -33,7 +33,7 @@ int main()
     const char *filename = "test.bcpl";
 
     LexerInfo *lxer = lexerCreateFromFile(filename);
-    Token t;
+    Token *t;
 
     do
     {
@@ -44,14 +44,14 @@ int main()
         }
         
         t = nextToken(lxer);
-        if (t.type != TOKEN_DELIM)
+        /*if (t->type != TOKEN_DELIM)
         {
             printTokenType(t);
-        }
-             
+        }*/
+        printTokenType(t);     
         //do parser stuff here
 
-    } while (t.type != TOKEN_EOF);
+    } while (t->type != TOKEN_EOF);
 
     return 0;
 }

@@ -45,32 +45,31 @@ typedef enum {
     TOKEN_SEMICOL,          // 15
     TOKEN_EOF,              // 16
     TOKEN_ERR,              // 17
-    TOKEN_LBRACK,           // 18
-    TOKEN_RBRACK,           // 19
+    TOKEN_LBRACE,           // 18
+    TOKEN_RBRACE,           // 19
     TOKEN_LPAREN,           // 20
     TOKEN_RPAREN,           // 21
     TOKEN_STRING,           // 22
-    TOKEN_DELIM             // 23
+    TOKEN_DELIM,            // 23
+    TOKEN_UNKOWN,           // 24
+    TOKEN_OPER
 } TokenType;
  
  /* =======================
         Lexer Structs
     ======================= */
- 
-/* Maximum size for numeric stack (unused for now) */
-#define NUM_STACK_MAX 8
- 
 
 typedef struct {
     TokenType type;
+    // anonomous union you dont need to .value.value
     union {
-        //change this later maybe not i dunno
-        char identifier[MAX_IDENT_LEN];
-        int tokenIntVal;
-        float tokenFloatVal;
+        //char identifier[MAX_IDENT_LEN];
+        char *stringVal;
+        int intVal;
+        float floatVal;
         char operator;
         char value; // for simple tokens like ';'
-    } value;
+    };
 } Token;
  
 typedef struct {
@@ -85,31 +84,22 @@ typedef struct {
  
 /* Lexer entry point */
 LexerInfo *lexerCreate(const char *inputString);
-Token nextToken(LexerInfo *lxer);
 LexerInfo *lexerCreateFromFile(const char *filename);
 
-bool isKeyWord(const Token *tok);
- 
-
+//lexer helpers
 char peek(LexerInfo *lxer);
 char peekNext(LexerInfo *lxer);
 char advance(LexerInfo *lxer);
 bool peekEoF(LexerInfo *lxer);
- 
- 
 
-Token numHandler(LexerInfo *lxer);
-Token opHandler(LexerInfo *lxer);
-Token identHandler(LexerInfo *lxer);
-Token stringHandler(LexerInfo *lxer);
-Token delimHandler(LexerInfo *lxer);
+//token functions and helpers
+Token *nextToken(LexerInfo *lxer);
+Token *numHandler(LexerInfo *lxer);
+Token *opHandler(LexerInfo *lxer);
+Token *identHandler(LexerInfo *lxer);
+Token *stringHandler(LexerInfo *lxer);
+Token *delimHandler(LexerInfo *lxer);
 
- /* Stack helpers (currently unused) */
-/*
-void push(NumStateStack *s, NumState st);
-void pop(NumStateStack *s);
-NumState peekNum(NumStateStack *s);
-*/
-void printTokenType(Token tok);
+void printTokenType(Token *tok);
 #endif /* LEXER_H */
  
