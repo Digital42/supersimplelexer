@@ -21,55 +21,78 @@ typedef uint8_t bool;
 #define true  1
 #define false 0
 #define MAX_IDENT_LEN 10
+
+#define TOKEN_LIST \
+    /* ================= IDENTIFIERS / LITERALS ================= */ \
+    X(TOKEN_IDEN_GENERIC) \
+    X(TOKEN_KEYWORD) \
+    X(TOKEN_INT) \
+    X(TOKEN_FLOAT) \
+    X(TOKEN_STRING) \
+    /* ================= SINGLE-CHAR OPERATORS ================= */ \
+    X(TOKEN_PLUS) \
+    X(TOKEN_MINUS) \
+    X(TOKEN_MUL) \
+    X(TOKEN_DIV) \
+    X(TOKEN_MOD) \
+    X(TOKEN_ASSIGN) \
+    X(TOKEN_LT) \
+    X(TOKEN_GT) \
+    X(TOKEN_SEMICOL) \
+    X(TOKEN_LBRACE) \
+    X(TOKEN_RBRACE) \
+    X(TOKEN_LPAREN) \
+    X(TOKEN_RPAREN) \
+    /* ================= MULTI-CHAR OPERATORS ================= */ \
+    X(TOKEN_EQ_EQ) \
+    X(TOKEN_NOTEQ) \
+    X(TOKEN_LTE) \
+    X(TOKEN_GTE) \
+    X(TOKEN_PLUS_EQ) \
+    X(TOKEN_MINUS_EQ) \
+    X(TOKEN_MUL_EQ) \
+    X(TOKEN_DIV_EQ) \
+    X(TOKEN_INCR) \
+    X(TOKEN_DECR) \
+    /* ================= DELIMITERS / WHITESPACE ================= */ \
+    X(TOKEN_DELIM_F) \
+    X(TOKEN_DELIM_N) \
+    X(TOKEN_DELIM_R) \
+    X(TOKEN_DELIM_T) \
+    X(TOKEN_DELIM_V) \
+    X(TOKEN_DELIM_S) \
+    X(TOKEN_DELIM_U) \
+    /* ================= SPECIAL ================= */ \
+    X(TOKEN_OPER) \
+    X(TOKEN_EOF) \
+    X(TOKEN_ERR) \
+    X(TOKEN_UNKNOWN)
  
 /* =======================
     Token and State Enums
    ======================= */
- 
+
 typedef enum {
-    TOKEN_IDEN_GENERIC,     // 0
-    TOKEN_KEYWORD,          // 1
-    TOKEN_INT,              // 2
-    TOKEN_FLOAT,            // 3
-    TOKEN_PLUS,             // 4
-    TOKEN_MINUS,            // 5
-    TOKEN_MUL,              // 6
-    TOKEN_DIV,              // 7
-    TOKEN_ASSIGN,           // 8
-    TOKEN_EQUAL,            // 9
-    TOKEN_NOTEQ,            // 10
-    TOKEN_LT,               // 11
-    TOKEN_LTE,              // 12
-    TOKEN_GT,               // 13
-    TOKEN_GTE,              // 14
-    TOKEN_SEMICOL,          // 15
-    TOKEN_EOF,              // 16
-    TOKEN_ERR,              // 17
-    TOKEN_LBRACE,           // 18
-    TOKEN_RBRACE,           // 19
-    TOKEN_LPAREN,           // 20
-    TOKEN_RPAREN,           // 21
-    TOKEN_STRING,           // 22
-    TOKEN_DELIM,            // 23
-    TOKEN_UNKOWN,           // 24
-    TOKEN_OPER
+    #define X(name) name,
+        TOKEN_LIST
+    #undef X
+        TOKEN_COUNT
 } TokenType;
  
+static const char *tokenTypeNames[TOKEN_COUNT] = {
+    #define X(name) [name] = #name,
+        TOKEN_LIST
+     #undef X
+ };
+
  /* =======================
         Lexer Structs
     ======================= */
 
 typedef struct {
     TokenType type;
-    // anonomous union you dont need to .value.value
-    union {
-        //char identifier[MAX_IDENT_LEN];
-        char *stringVal;
-        int intVal;
-        float floatVal;
-        char operator;
-        char value; // for simple tokens like ';'
-    };
+    const char *start; // points into lexer->input
+    size_t length;
 } Token;
  
 typedef struct {
@@ -77,14 +100,14 @@ typedef struct {
     size_t      pos;    /* Current position in input */
 } LexerInfo;
 
-
 /* =======================
-          Prototypes
+          Prototypes         FIX THESE PROTOTYPES A LOT OF THIS STUFF SHOULDNT BE EXPOSED FROM THIS HEADER FILE I WAS JUST DOING IT FOR UNIT TESTING BECAUSE IM LE NOT SMART
    ======================= */
  
 /* Lexer entry point */
 LexerInfo *lexerCreate(const char *inputString);
 LexerInfo *lexerCreateFromFile(const char *filename);
+void lexerDestroy(LexerInfo *lex);
 
 //lexer helpers
 char peek(LexerInfo *lxer);
@@ -93,13 +116,13 @@ char advance(LexerInfo *lxer);
 bool peekEoF(LexerInfo *lxer);
 
 //token functions and helpers
-Token *nextToken(LexerInfo *lxer);
-Token *numHandler(LexerInfo *lxer);
-Token *opHandler(LexerInfo *lxer);
-Token *identHandler(LexerInfo *lxer);
-Token *stringHandler(LexerInfo *lxer);
-Token *delimHandler(LexerInfo *lxer);
+Token nextToken(LexerInfo *lxer);
+Token numHandler(LexerInfo *lxer);
+Token opHandler(LexerInfo *lxer);
+Token identHandler(LexerInfo *lxer);
+Token stringHandler(LexerInfo *lxer);
+Token delimHandler(LexerInfo *lxer);
 
-void printTokenType(Token *tok);
+void printTokenType(Token tok);
 #endif /* LEXER_H */
  

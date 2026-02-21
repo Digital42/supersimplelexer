@@ -9,13 +9,14 @@
 *        each token to a value vbetween 0-15. This isnt easily extendable but 
 *        its bcpl no one has added new keywords to it since the cold war
 ******************************************************************************/
-
 #include <string.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include "hash.h"
-
+/* =======================
+     BCPL Keyword List
+   ======================= */ 
 
 struct KeywordEntry {
     const char *name;
@@ -38,7 +39,7 @@ struct KeywordEntry {
     [KEYWRD_MANIFEST] = {"MANIFEST"},
 };
 
-Keyword perfectHash(const char *keyword, size_t len)
+Keyword perfectHash(const char *keyword)
 {
     switch (keyword[0]) {
         case 'B': return (keyword[1] == 'R') ? KEYWRD_BREAK  : KEYWRD_BE;
@@ -58,9 +59,8 @@ Keyword perfectHash(const char *keyword, size_t len)
 
 bool lookUp(const char *keyword)
 {
-    size_t len = strlen(keyword);
-    Keyword kw = perfectHash(keyword, len);
+    Keyword kw = perfectHash(keyword);
     if (kw == KEYWRD_UNKNOWN)
         return false;
-    return strcmp(keywordTable[kw].name, keyword) == false;
+    return strcmp(keywordTable[kw].name, keyword);
 }

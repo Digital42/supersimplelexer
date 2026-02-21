@@ -1,7 +1,8 @@
-   LET start() BE
+LET  start() BE
 {
-    LET a = 6.1
-    LET b = 3
-    LET sum = a + b                    
-    LET msg = "done yah"
+    LET a = .7
+    LET b = 3.255.6
+    LET sum = a += b
+    LET msg = "done ya\"h"
+    LET msg2 = "done"   
 };
