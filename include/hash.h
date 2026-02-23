@@ -41,7 +41,7 @@ typedef enum {
     KEYWRD_UNKNOWN  = -1
 } Keyword;
 
-Keyword perfectHash(const char *keyword);
-bool lookUp(const char *keyword);
+Keyword perfectHash(const char *keyword, size_t len);
+bool lookUp(const char *keyword, size_t len);
      
 #endif /* HASH_H */

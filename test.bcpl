@@ -1,8 +1,14 @@
+/* this is a test \n for comments */
 LET  start() BE
 {
-    LET a = .7
-    LET b = 3.255.6
+    LET b = 0o07861
+    LET b = 0b010210
+    LET z = 0b01010
+    LET c = 2768
+    LET a_ = 0239
+    LET _a_ = 0x7ef
+    LET b_ = 3.255.6
     LET sum = a += b
     LET msg = "done ya\"h"
-    LET msg2 = "done"   
+    LET msg2 = "hello\nworld"   
 };

@@ -13,6 +13,9 @@
 #include <stdint.h>   // uint8_t, int32_t
 #include <stdio.h>
  
+// i dont like this seems like its bad practice make sure to figure this out later
+#define isoctal(c) ((c) >= '0' && (c) <= '7')
+#define isbinary(c) ((c) >= '0' && (c) <= '1')
  /* =======================
         Basic Types
     ======================= */
@@ -20,7 +23,6 @@
 typedef uint8_t bool;
 #define true  1
 #define false 0
-#define MAX_IDENT_LEN 10
 
 #define TOKEN_LIST \
     /* ================= IDENTIFIERS / LITERALS ================= */ \
@@ -66,8 +68,8 @@ typedef uint8_t bool;
     X(TOKEN_OPER) \
     X(TOKEN_EOF) \
     X(TOKEN_ERR) \
-    X(TOKEN_UNKNOWN)
- 
+    X(TOKEN_UNKNOWN) \
+    X(TOKEN_COMMENT) \
 /* =======================
     Token and State Enums
    ======================= */
@@ -79,12 +81,6 @@ typedef enum {
         TOKEN_COUNT
 } TokenType;
  
-static const char *tokenTypeNames[TOKEN_COUNT] = {
-    #define X(name) [name] = #name,
-        TOKEN_LIST
-     #undef X
- };
-
  /* =======================
         Lexer Structs
     ======================= */
@@ -98,6 +94,9 @@ typedef struct {
 typedef struct {
     const char *input;  /* Input string to tokenize */
     size_t      pos;    /* Current position in input */
+    bool ownsInput;     /* tracks if you need to delete buffer or not     */
+    size_t cols;
+    size_t lines;
 } LexerInfo;
 
 /* =======================
