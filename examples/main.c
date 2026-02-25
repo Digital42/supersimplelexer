@@ -8,6 +8,11 @@
 ******************************************************************************/
 #include "lexer.h"
 
+void errorHandler(int line, int col, const char *msg, void *userData, const char *errChar) {
+    printf("Lexer error at %d:%d: %s @ %c\n", line, col, msg, errChar);
+}
+
+
 int main()
 {
 	/* random test strings so i dont have to keep commenting out stuff */
@@ -17,6 +22,9 @@ int main()
 
 	const char *filename = "test.bcpl";
 	LexerInfo *lxer = lexerCreateFromFile(filename);
+    lxer->errorFn = errorHandler;
+    //make sure to set the void pointer for whatever main will pass to the lexer error handler 
+    lxer->errorUserData = NULL;
 	Token t;
 
 	do {

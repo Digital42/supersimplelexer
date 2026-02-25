@@ -23,6 +23,27 @@ static const char *tokenTypeNames[TOKEN_COUNT] = {
      #undef X
  };
 
+ #define isxblurf(c) \
+ ((c) == 'x' || (c) == 'X' || \
+  (c) == 'b' || (c) == 'B' || \
+  (c) == 'u' || (c) == 'U' || \
+  (c) == 'l' || (c) == 'L' || \
+  (c) == 'f' || (c) == 'F' || \
+  (c) == '.' || (c) == 'o' || \
+  (c) == 'O' )
+
+
+
+typedef enum {
+    STATE_START,
+    STATE_INT,
+    STATE_FLOAT,
+    STATE_LITERAL,
+    STATE_HEX,
+    STATE_BIN,
+    STATE_OCT,
+    STATE_ERR
+} NumState;
 
 /* ============================================================
    ===================== LEXER FUNCTIONS  =====================
@@ -133,8 +154,39 @@ LexerInfo *lexerCreateFromFile(const char *filename)
  */
 Token nextToken(LexerInfo *lxer)
 {
+    
 	Token tok = {0};
 	char c = peek(lxer);
+
+    // this comment support is wonky and needs to be changed later. throw it into a function or something
+
+    if (c == '/' && peekNext(lxer) == '/' )
+    {
+        tok.start = lxer->input + lxer->pos;
+        tok.type = TOKEN_COMMENT;
+        //commnet state
+        advance(lxer);
+        advance(lxer);
+        tok.length++;
+        tok.length++;
+
+        while (!peekEoF(lxer)) {
+            /* code */
+            //advance(lxer);
+            if (peek(lxer) == '\n') {
+
+                advance(lxer);
+                tok.length++;
+
+                return tok;
+            }
+            tok.length++;
+            advance(lxer);
+        }
+
+        return tok;
+    }
+    
 
     /* Handle comments */
     if(c == '/' && peekNext(lxer) == '*' ){
@@ -162,7 +214,8 @@ Token nextToken(LexerInfo *lxer)
             advance(lxer);
         }
         // restrt tokenization? I dunno if this is good or not i probably need to fix this nonsense typing issue here
-        printf("Run on comment till end of file. No closing comment @Line: %d @col: %d\n", (int)lxer->lines, (int)lxer->cols - 1);
+        reportLexerError(lxer, "Unterminated string literal");
+        tok.type = TOKEN_ERR;
         return tok;
     }
 
@@ -180,6 +233,7 @@ Token nextToken(LexerInfo *lxer)
 
 	/* Single-character or multi-character tokens */
 	switch (peek(lxer)) {
+        
 	case '\0':
 		tok.start = lxer->input + lxer->pos;
 		tok.type = TOKEN_EOF;
@@ -225,6 +279,9 @@ Token nextToken(LexerInfo *lxer)
 	case '+':
 		return opHandler(lxer);
 
+    case '!':
+		return opHandler(lxer);    
+
 	case '=':
 		return opHandler(lxer);
 
@@ -244,7 +301,8 @@ Token nextToken(LexerInfo *lxer)
 		return stringHandler(lxer);
 
 	default:
-    printf("Error @:%c\n", peek(lxer));
+
+        reportLexerError(lxer, "Out of place character");
 		tok.start = lxer->input + lxer->pos;
 		tok.type = TOKEN_ERR;
 		tok.length = 1;
@@ -320,6 +378,7 @@ Token stringHandler(LexerInfo *lxer)
 			}
             // need to handle other escape characters here
 		}
+        // need to handle un terminated strings around here 
 	} while (c != '"');
 
 	return tok;
@@ -411,8 +470,13 @@ Token opHandler(LexerInfo *lxer)
 		}
 		break;
 
-	case '%':
+    case '%':
 		tok.type = TOKEN_MOD;
+
+		break;
+	case '!':
+		tok.type = TOKEN_NEGATION;
+
 		break;
 
 	case '=':
@@ -465,73 +529,162 @@ Token numHandler(LexerInfo *lxer)
 	//bool isFloat = false;
 	tok.start = lxer->input + lxer->pos;
 	tok.length = 0;
-    char c = peek(lxer);
+    NumState state = STATE_START;
 
-	if (c == '0' && (peekNext(lxer) == 'x' || peekNext(lxer) == 'X')){
-        advance(lxer);
-        advance(lxer);
-        tok.length++;
-        tok.length++;
+    while ( ( isxdigit(peek(lxer)) || isxblurf(peek(lxer)) ) && !peekEoF(lxer)  ){
+        char c = advance(lxer);
+        switch (state) {
+            case STATE_START:
+                if (c == '0' && isxblurf(peek(lxer))){
 
-        while (isxdigit(peek(lxer))){
-            tok.length++;
-           // printf("hex char: %c\n", peek(lxer));
-            advance(lxer);
-        }
-        //printf("hex rtrn char: %c\n", peek(lxer));
-        tok.type = TOKEN_INT;
-        return tok;
-        
-    }else if (c == '0' && (peekNext(lxer) == 'b' || peekNext(lxer) == 'B')){
-        advance(lxer);
-        advance(lxer);
-        tok.length++;
-        tok.length++;
+                        state = STATE_LITERAL;
+                        tok.length++;
+                
+                }else if (c == '0' && isdigit(peek(lxer)))
+                {
+                    
+                    state = STATE_ERR;
+                    tok.length++;
 
-        while (isbinary(peek(lxer))){
-            tok.length++;
-            advance(lxer);
-        }
+                    reportLexerError(lxer, "Malformed numeric Literal");  
+                }else if (c == '.'){
+                    state = STATE_FLOAT;
+                    //advance();
+                    tok.length++;
+                }else if (isdigit(c)){
+                    state = STATE_INT;
+                    tok.length++;
+                }else{
+                    state = STATE_ERR;
+                    //advance();
+                    tok.length++;
+                    reportLexerError(lxer, "Malformed unnamed numeric Literal");                  
+                }break;
+                
+                
+             case STATE_LITERAL:
+                if (isoctal(c) ){
+                    state = STATE_OCT;
+                    tok.length++;
+                    
+                }else if (c == 'x' || c == 'X'){
+                    state = STATE_HEX;
+                    //advance();
+                    tok.length++;
+                }else if (c == 'b' || c == 'B'){
+                    state = STATE_BIN;
+                    //advance();
+                    tok.length++;
+                }else if (c == 'o' || c == 'O'){
+                    state = STATE_OCT;
+                    //advance();
+                    tok.length++;
+                }else{
+                    state = STATE_ERR;
+                    //advance();
+                    tok.length++;
+                    reportLexerError(lxer, "Malformed Literal General");                  
+                }break;               
+                
+                
+            case STATE_INT:  
+                if (isdigit(c)){
+                    //advance();
+                    tok.length++;
+                }else if (c == '.'){
+                    tok.length++;
+                    state = STATE_FLOAT;
+                }else{
+                   // advance(); 
+                    tok.length++;
+                    state = STATE_ERR;
+                    reportLexerError(lxer, "Malformed Integer Literal");      
+                }break;
+                
+            case STATE_FLOAT:  
+                if (isdigit(c)){
+                    //advance();
+                    tok.length++;
+                }else{
+                   // advance(); 
+                    tok.length++;
+                    state = STATE_ERR;  
+                    reportLexerError(lxer, "Malformed Float Literal");    
+                }break;
+                
+            case STATE_HEX:
+                if (isxdigit(c)){
+                    //advance();
+                    tok.length++;
+                }else{
+                    //advance(); 
+                    tok.length++;
+                    state = STATE_ERR;
+                    reportLexerError(lxer, "Malformed Hex Literal");      
+                }break; 
+                
+            case STATE_BIN:
+                if (isbinary(c)){
+                    //advance();
+                    tok.length++;
+                }else{
+                    //advance(); 
+                    tok.length++;
+                    state = STATE_ERR;   
+                    reportLexerError(lxer, "Malformed Binary Literal");   
+                }break;   
+                
+            case STATE_OCT:
+                if (isoctal(c)){
+                    //advance();
+                    tok.length++;
+                }else{
+                    //advance(); 
+                    tok.length++;
+                    state = STATE_ERR; 
+                    reportLexerError(lxer, "Malformed Octal Literal");   
+                }break; 
 
-        tok.type = TOKEN_INT;
-        return tok;
-        
-    }else if (c == '0' && (peekNext(lxer) == 'o' || peekNext(lxer) == 'O')){
-        advance(lxer);
-        advance(lxer);
-        tok.length++;
-        tok.length++;
-
-        while (isoctal(peek(lxer))){
-            tok.length++;
-            advance(lxer);
-        }
-
-        tok.type = TOKEN_INT;
-        return tok;
-    }else{
-
-        tok.type = TOKEN_INT;
-        while (isdigit(peek(lxer))){
-            tok.length++;
-            advance(lxer);
-        }
-        
-        if (peek(lxer) == '.'){
-            tok.length++;
-            tok.type = TOKEN_FLOAT;
-            advance(lxer);
-
-            while (isdigit(peek(lxer))){
+            case STATE_ERR:
+                //advance();
                 tok.length++;
-                advance(lxer);
-            }
-        }  
-        return tok;
+                //advance(); 
+                //reportLexerError(lxer, "Gneral Malform Number Token");
+                break; 
+        }
+    }
+    
+    switch (state){
+        case STATE_ERR:
+            tok.type = TOKEN_ERR;
+            break;
+            
+        case STATE_INT:
+            tok.type = TOKEN_INT;
+            break;   
+            
+        case STATE_FLOAT:
+            tok.type = TOKEN_FLOAT;
+            break;
+            
+        case STATE_HEX:
+            tok.type = TOKEN_HEX;
+            break;   
+            
+        case STATE_OCT:
+            tok.type = TOKEN_OCT;
+            break; 
+            
+        case STATE_BIN:
+            tok.type = TOKEN_BIN;
+            break;  
+            
+        case STATE_LITERAL:
+            tok.type = TOKEN_LITERAL;
+            break;       
     }
 
-    // i think this return is useless not sure
-	return tok;
+    return tok;
 }
 
 /* ============================================================
@@ -602,4 +755,12 @@ void printTokenType(Token tok)
 		printf(" -> %.*s", (int)tok.length, tok.start);
 
 	printf("\n");
+}
+
+
+
+void reportLexerError(LexerInfo *lex, const char *msg) {
+    if (lex->errorFn) {
+        lex->errorFn(lex->lines, lex->cols, msg, lex->errorUserData, lex->input[lex->pos-1]);
+    }
 }

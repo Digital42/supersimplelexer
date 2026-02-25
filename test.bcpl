@@ -1,14 +1,16 @@
 /* this is a test \n for comments */
 LET  start() BE
 {
-    LET b = 0o07861
-    LET b = 0b010210
-    LET z = 0b01010
+    LET b = 0i0761
+    LET b = 0b01010
+    LET z = 0b010210
     LET c = 2768
-    LET a_ = 0239
+    LET k = 0
+    LET a_ = 0o239
+    LET u = 0o23
     LET _a_ = 0x7ef
     LET b_ = 3.255.6
-    LET sum = a += b
+    LET !sum = a += b
     LET msg = "done ya\"h"
     LET msg2 = "hello\nworld"   
 };

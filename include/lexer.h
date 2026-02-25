@@ -31,6 +31,9 @@ typedef uint8_t bool;
     X(TOKEN_INT) \
     X(TOKEN_FLOAT) \
     X(TOKEN_STRING) \
+    X(TOKEN_HEX) \
+    X(TOKEN_BIN) \
+    X(TOKEN_OCT) \
     /* ================= SINGLE-CHAR OPERATORS ================= */ \
     X(TOKEN_PLUS) \
     X(TOKEN_MINUS) \
@@ -46,6 +49,8 @@ typedef uint8_t bool;
     X(TOKEN_LPAREN) \
     X(TOKEN_RPAREN) \
     /* ================= MULTI-CHAR OPERATORS ================= */ \
+    X(TOKEN_LITERAL) \
+    X(TOKEN_NEGATION) \
     X(TOKEN_EQ_EQ) \
     X(TOKEN_NOTEQ) \
     X(TOKEN_LTE) \
@@ -70,6 +75,11 @@ typedef uint8_t bool;
     X(TOKEN_ERR) \
     X(TOKEN_UNKNOWN) \
     X(TOKEN_COMMENT) \
+
+
+
+typedef void (*LexerErrorCallback)(int line, int column, const char *message, void *userData, const char *errChar);
+
 /* =======================
     Token and State Enums
    ======================= */
@@ -81,6 +91,9 @@ typedef enum {
         TOKEN_COUNT
 } TokenType;
  
+
+
+
  /* =======================
         Lexer Structs
     ======================= */
@@ -97,7 +110,12 @@ typedef struct {
     bool ownsInput;     /* tracks if you need to delete buffer or not     */
     size_t cols;
     size_t lines;
+    LexerErrorCallback errorFn;  // user-supplied callback
+    void *errorUserData;         // user data passed back to callback
 } LexerInfo;
+
+
+
 
 /* =======================
           Prototypes         FIX THESE PROTOTYPES A LOT OF THIS STUFF SHOULDNT BE EXPOSED FROM THIS HEADER FILE I WAS JUST DOING IT FOR UNIT TESTING BECAUSE IM LE NOT SMART
@@ -107,6 +125,7 @@ typedef struct {
 LexerInfo *lexerCreate(const char *inputString);
 LexerInfo *lexerCreateFromFile(const char *filename);
 void lexerDestroy(LexerInfo *lex);
+void reportLexerError(LexerInfo *lex, const char *msg);
 
 //lexer helpers
 char peek(LexerInfo *lxer);
@@ -123,5 +142,4 @@ Token stringHandler(LexerInfo *lxer);
 Token delimHandler(LexerInfo *lxer);
 
 void printTokenType(Token tok);
-#endif /* LEXER_H */
- 
+#endif 
