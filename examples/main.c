@@ -29,13 +29,13 @@ int main()
 
 	do {
 		if (!lxer) {
-			printf("no file found\n");
+			printf("No file found!\n");
 			break;
 		}
 		t = nextToken(lxer);
 		if (t.type != TOKEN_DELIM_S)
 			printTokenType(t);
-	} while (t.type != TOKEN_EOF);
+	}while (t.type != TOKEN_EOF);
 
     printf("Lines: %d\n", lxer->lines);
     printf("Col @ end: %d\n", lxer->cols);

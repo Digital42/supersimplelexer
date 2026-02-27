@@ -38,6 +38,11 @@ typedef enum {
     KEYWRD_GLOBAL   = 13,
     KEYWRD_STATIC   = 14,
     KEYWRD_MANIFEST = 15,
+    KEYWRD_GOTO     = 16,
+    KEYWRD_RESULTS  = 17,
+    KEYWRD_VALOF    = 18,   
+    KEYWRD_WRITEF   = 19,
+    KEYWRD_TEST     = 20,
     KEYWRD_UNKNOWN  = -1
 } Keyword;
 

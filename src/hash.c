@@ -34,7 +34,12 @@ struct KeywordEntry {
 	[KEYWRD_DEFAULT]  = {"DEFAULT"},
 	[KEYWRD_GLOBAL]   = {"GLOBAL"},
 	[KEYWRD_STATIC]   = {"STATIC"},
-	[KEYWRD_MANIFEST] = {"MANIFEST"},
+	[KEYWRD_MANIFEST] = {"MANIFEST"},	
+    [KEYWRD_GOTO]     = {"GOTO"},
+	[KEYWRD_RESULTS]  = {"RESULTS"},
+    [KEYWRD_VALOF]    = {"VALOF"},
+    [KEYWRD_WRITEF]   = {"WRITEF"},
+    [KEYWRD_TEST]     = {"TEST"},
 };
 
 // this is unsafe need to likely put this in a loop r something and not blindly reach up to 3 character deep into a string 
@@ -46,14 +51,16 @@ Keyword perfectHash(const char *keyword, size_t len)
 	case 'B': return (len > 2 && keyword[1] == 'R') ? KEYWRD_BREAK   : KEYWRD_BE;
 	case 'C': return KEYWRD_CASE;
 	case 'D': return (len > 2 && keyword[1] == 'E') ? KEYWRD_DEFAULT : KEYWRD_DO;
-	case 'G': return KEYWRD_GLOBAL;
+	case 'G': return (len > 2 && keyword[1] == 'O') ? KEYWRD_GOTO    : KEYWRD_GLOBAL;
 	case 'I': return KEYWRD_IF;
 	case 'L': return (len > 2 && keyword[1] == 'O') ? KEYWRD_LOOP    : KEYWRD_LET;
 	case 'M': return KEYWRD_MANIFEST;
-	case 'R': return KEYWRD_RETURN;
+	case 'R': return (len > 3 && keyword[2] == 'S') ? KEYWRD_RESULTS    : KEYWRD_RETURN;
 	case 'S': return (len > 3 && keyword[1] == 'W') ? KEYWRD_SWITCH  : KEYWRD_STATIC;
 	case 'U': return (len > 3 && keyword[1] == 'N' && keyword[2] == 'T') ? KEYWRD_UNTIL   : KEYWRD_UNLESS;
-	case 'W': return KEYWRD_WHILE;
+	case 'W': return (len > 2 && keyword[1] == 'R') ? KEYWRD_WRITEF    : KEYWRD_WHILE;
+    case 'V': return KEYWRD_VALOF;
+    case 'T': return KEYWRD_TEST;
 	default:  return KEYWRD_UNKNOWN;
 	}
 }

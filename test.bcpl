@@ -1,16 +1,114 @@
-/* this is a test \n for comments */
-LET  start() BE
-{
-    LET b = 0i0761
-    LET b = 0b01010
-    LET z = 0b010210
-    LET c = 2768
-    LET k = 0
-    LET a_ = 0o239
-    LET u = 0o23
-    LET _a_ = 0x7ef
-    LET b_ = 3.255.6
-    LET !sum = a += b
-    LET msg = "done ya\"h"
-    LET msg2 = "hello\nworld"   
-};
+// ---------- COMMENT EDGE CASES USED CHATGPT TO GENERATE TOERTURE TEST ----------
+
+// // nested line comment markers
+/* block comment start
+   NESTED COMMENTS FAIL BECUASE THEY SHOULD WE DONT SUPPORT THAT HERE
+*/
+
+GET"libhdr"      // no space after keyword
+GET "libhdr"x    // string followed immediately by identifier
+
+GLOBAL{
+g1:1
+g2:2
+}GLOBAL        // delimiter adjacency
+
+// ---------- IDENTIFIER EDGE CASES ----------
+
+LET ifx = 1          // keyword prefix
+LET TESTING = 2      // keyword prefix
+LET RESULTISx = 3    // keyword prefix
+LET A123B456 = 4
+LET longidentifierwithmanycharacters1234567890 = 5
+
+// ---------- NUMERIC EDGE CASES ----------
+
+LET d1 = 0
+LET d2 = 0123        // leading zero
+LET d3 = 0xFF
+LET d4 = 0x1f
+LET d5 = 0XABC
+LET d6 = 0x          // malformed hex
+LET d7 = 123abc      // number followed by identifier
+LET d8 = 9999999999999999999999999999
+
+// ---------- OPERATOR MAXIMAL MUNCH ----------
+
+LET o1 = a+b
+LET o2 = a++b        // should tokenize as a + + b
+LET o3 = a--b        // a - - b
+LET o4 = a+-b
+LET o5 = a-+b
+LET o6 = a<<b
+LET o7 = a<<<b       // << + <
+LET o8 = a>>b
+LET o9 = a>>>b       // >> + >
+LET o10 = a:=b
+LET o11 = a:b        // label vs colon
+LET o12 = a=b
+LET o13 = a~=b
+LET o14 = a~==b      // ~= + =
+LET o15 = a->b
+LET o16 = a-->b      // - - > or -- > ?
+LET o17 = a- ->b     // whitespace sensitivity
+LET o18 = a,b,c
+LET o19 = a,,b       // empty expression between commas?
+
+// ---------- CONDITIONAL OPERATOR ----------
+
+LET c1 = a=b->c,d
+LET c2 = a=b->c->d,e
+
+// ---------- STRING EDGE CASES ----------
+
+LET s1 = ""
+LET s2 = "a"
+LET s3 = "unterminated
+LET s4 = "escaped quote: \" ok"
+LET s5 = "backslash at end \\"
+LET s6 = "newline\
+continued"
+LET s7 = "/* not comment */"
+LET s8 = "// not comment"
+
+// ---------- CHARACTER CONSTANT EDGE CASES ----------
+
+LET ch1 = 'A'
+LET ch2 = '\n'
+LET ch3 = '\''
+LET ch4 = ''
+LET ch5 = 'AB'
+
+// ---------- LABEL / GOTO CONFUSION ----------
+
+start:
+start1:
+start_:
+LET start2 = 5
+GOTO start
+GOTO start1
+
+// ---------- BRACKET ADJACENCY ----------
+
+LET f(x,y) = x+y
+LET r = f(1,2)(3)     // call result as function?
+LET z = (a+b)*(c-d)
+
+// ---------- WEIRD WHITESPACE ----------
+
+LET	w	=	1
+LET
+x
+=
+2
+
+// ---------- COMMENT TERMINATION TRAPS ----------
+
+/* ends with star *
+still comment? */
+
+/**/
+ /*/
+ */
+
+// ---------- END ----------

@@ -199,22 +199,25 @@ Token nextToken(LexerInfo *lxer)
         tok.length++;
 
         while (!peekEoF(lxer)) {
-            /* code */
+            /* code
             //advance(lxer);
+            if(peek(lxer) == '\n'){
+                lxer->lines++;
+            }*/
+
             if (peek(lxer) == '*' && peekNext(lxer) == '/') {
 
                 advance(lxer);
                 advance(lxer);
                 tok.length++;
                 tok.length++;
-
                 return tok;
             }
             tok.length++;
             advance(lxer);
         }
-        // restrt tokenization? I dunno if this is good or not i probably need to fix this nonsense typing issue here
-        reportLexerError(lxer, "Unterminated string literal");
+        // restart tokenization? I dunno if this is good or not i probably need to fix this nonsense typing issue here
+        reportLexerError(lxer, "Unterminated comment");
         tok.type = TOKEN_ERR;
         return tok;
     }
@@ -269,6 +272,20 @@ Token nextToken(LexerInfo *lxer)
 		advance(lxer);
 		return tok;
 
+    case '[':
+		tok.start = lxer->input + lxer->pos;
+		tok.type = TOKEN_LBRAK;
+		tok.length = 1;
+		advance(lxer);
+		return tok;
+
+	case ']':
+		tok.start = lxer->input + lxer->pos;
+		tok.type = TOKEN_RBRAk;
+		tok.length = 1;
+		advance(lxer);
+		return tok;
+
 	case ';':
 		tok.start = lxer->input + lxer->pos;
 		tok.type = TOKEN_SEMICOL;
@@ -276,12 +293,40 @@ Token nextToken(LexerInfo *lxer)
 		advance(lxer);
 		return tok;
 
+    case ',':
+		tok.start = lxer->input + lxer->pos;
+		tok.type = TOKEN_SEPERATOR;
+		tok.length = 1;
+		advance(lxer);
+		return tok;    
+
 	case '+':
+		return opHandler(lxer);
+    
+    case '%':
+		return opHandler(lxer);
+
+    case '-':
 		return opHandler(lxer);
 
     case '!':
-		return opHandler(lxer);    
+		return opHandler(lxer);
+    
+    case ':':
+		return opHandler(lxer);       
 
+    case '~':
+		return opHandler(lxer); 
+
+    case '&':
+		return opHandler(lxer); 
+
+    case '@':
+		return opHandler(lxer);
+
+    case '|':
+		return opHandler(lxer);  
+        
 	case '=':
 		return opHandler(lxer);
 
@@ -299,7 +344,9 @@ Token nextToken(LexerInfo *lxer)
 
 	case '"':
 		return stringHandler(lxer);
-
+    
+    case '\'':
+		return stringHandler(lxer);
 	default:
 
         reportLexerError(lxer, "Out of place character");
@@ -361,25 +408,32 @@ Token stringHandler(LexerInfo *lxer)
 	c = advance(lxer);
 
 	do {
+
+        //printf("top char %c\n", c);
 		if (peek(lxer) == '\0') {
 			/* Unterminated string; return as-is */
+            reportLexerError(lxer, "Unterminated string literal");
 			return tok;
 		}
-
-		tok.length++;
+        tok.length++;
 		c = advance(lxer);
 
-		if (c == '\\') {
+		if (c == '\\' && peek(lxer) == '"') {
 			tok.length++;
 			advance(lxer);
-			if (peek(lxer) == '"') {
+        }
+		
+        if (c == '\\' && peek(lxer) == 'n') {
 				tok.length++;
 				advance(lxer);
-			}
-            // need to handle other escape characters here
 		}
+        
+            
+            // need to handle other escape characters here
+		
         // need to handle un terminated strings around here 
-	} while (c != '"');
+
+	} while (c != '"' || c != '\'');
 
 	return tok;
 }
@@ -441,10 +495,14 @@ Token opHandler(LexerInfo *lxer)
 			advance(lxer);
 			tok.length++;
 			tok.type = TOKEN_DECR;
-		} else if (peek(lxer) == '=') {
+		}else if (peek(lxer) == '=') {
 			advance(lxer);
 			tok.length++;
 			tok.type = TOKEN_MINUS_EQ;
+        }else if (peek(lxer) == '>') {
+			advance(lxer);
+			tok.length++;
+			tok.type = TOKEN_OBJ_INDREC;
 		} else {
 			tok.type = TOKEN_MINUS;
 		}
@@ -472,20 +530,38 @@ Token opHandler(LexerInfo *lxer)
 
     case '%':
 		tok.type = TOKEN_MOD;
-
 		break;
-	case '!':
+
+    case '@':
+		tok.type = TOKEN_ADDRESS_OF;
+		break;       
+
+	case '~':
 		tok.type = TOKEN_NEGATION;
-
 		break;
 
+    case '!':
+		tok.type = TOKEN_INDIRECTION;
+		break;
+
+    case ':':
+        if (peek(lxer) == '='){
+            advance(lxer);
+            tok.length++;
+            tok.type = TOKEN_ASSIGN;
+        }else{
+            tok.type = TOKEN_COLON;   
+        }
+        break;
+
+        //bcpl doesnt support == like c does so I need to take this out
 	case '=':
-		if (peek(lxer) == '=') {
-			advance(lxer);
+		if (peek(lxer) == '>'){
+            advance(lxer);
 			tok.length++;
+			tok.type = TOKEN_STRUC_REF;
+        }else {
 			tok.type = TOKEN_EQ_EQ;
-		} else {
-			tok.type = TOKEN_ASSIGN;
 		}
 		break;
 
@@ -494,7 +570,11 @@ Token opHandler(LexerInfo *lxer)
 			advance(lxer);
 			tok.length++;
 			tok.type = TOKEN_LTE;
-		} else {
+		} else if (peek(lxer) == '<'){
+            advance(lxer);
+			tok.length++;
+			tok.type = TOKEN_BITWISEL;
+        }else {
 			tok.type = TOKEN_LT;
 		}
 		break;
@@ -504,7 +584,11 @@ Token opHandler(LexerInfo *lxer)
 			advance(lxer);
 			tok.length++;
 			tok.type = TOKEN_GTE;
-		} else {
+		} else if (peek(lxer) == '>'){
+            advance(lxer);
+			tok.length++;
+			tok.type = TOKEN_BITWISER;
+        }else {
 			tok.type = TOKEN_GT;
 		}
 		break;
@@ -525,6 +609,9 @@ Token opHandler(LexerInfo *lxer)
  */
 Token numHandler(LexerInfo *lxer)
 {
+    /*
+        TODO: this is a mess. This pretend state machine monstrosity needs to go this is way to cluckly and unmaintanable 
+    */
 	Token tok = {0};
 	//bool isFloat = false;
 	tok.start = lxer->input + lxer->pos;
@@ -546,7 +633,7 @@ Token numHandler(LexerInfo *lxer)
                     state = STATE_ERR;
                     tok.length++;
 
-                    reportLexerError(lxer, "Malformed numeric Literal");  
+                    reportLexerError(lxer, "Malformed Integer Literal");  
                 }else if (c == '.'){
                     state = STATE_FLOAT;
                     //advance();
@@ -558,7 +645,7 @@ Token numHandler(LexerInfo *lxer)
                     state = STATE_ERR;
                     //advance();
                     tok.length++;
-                    reportLexerError(lxer, "Malformed unnamed numeric Literal");                  
+                    reportLexerError(lxer, "Malformed unnamed Literal");                  
                 }break;
                 
                 
@@ -649,7 +736,7 @@ Token numHandler(LexerInfo *lxer)
                 //advance();
                 tok.length++;
                 //advance(); 
-                //reportLexerError(lxer, "Gneral Malform Number Token");
+                //reportLexerError(lxer, "General Malform Number Token Unsure of what went wrong");
                 break; 
         }
     }
@@ -714,6 +801,10 @@ char advance(LexerInfo *lxer)
  */
 char peek(LexerInfo *lxer)
 {
+    /*
+        TODO: Add some sort of bounds checking here. Maybe get the length of the input string thats being lexed
+    */
+
 	return lxer->input[lxer->pos];
 }
 
@@ -763,4 +854,7 @@ void reportLexerError(LexerInfo *lex, const char *msg) {
     if (lex->errorFn) {
         lex->errorFn(lex->lines, lex->cols, msg, lex->errorUserData, lex->input[lex->pos-1]);
     }
+
+    // handle a fail state here right now if the functions pointer 
+    // in the lexer structure is null it jsut falls tru
 }

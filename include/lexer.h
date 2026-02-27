@@ -31,6 +31,7 @@ typedef uint8_t bool;
     X(TOKEN_INT) \
     X(TOKEN_FLOAT) \
     X(TOKEN_STRING) \
+    X(TOKEN_CHAR) \
     X(TOKEN_HEX) \
     X(TOKEN_BIN) \
     X(TOKEN_OCT) \
@@ -46,8 +47,15 @@ typedef uint8_t bool;
     X(TOKEN_SEMICOL) \
     X(TOKEN_LBRACE) \
     X(TOKEN_RBRACE) \
+    X(TOKEN_LBRAK) \
+    X(TOKEN_RBRAk) \
     X(TOKEN_LPAREN) \
     X(TOKEN_RPAREN) \
+    X(TOKEN_OBJ_INDREC) \
+    X(TOKEN_INDIRECTION) \
+    X(TOKEN_STRUC_REF) \
+    X(TOKEN_COLON) \
+    X(TOKEN_SEPERATOR) \
     /* ================= MULTI-CHAR OPERATORS ================= */ \
     X(TOKEN_LITERAL) \
     X(TOKEN_NEGATION) \
@@ -61,6 +69,9 @@ typedef uint8_t bool;
     X(TOKEN_DIV_EQ) \
     X(TOKEN_INCR) \
     X(TOKEN_DECR) \
+    X(TOKEN_BITWISEL) \
+    X(TOKEN_BITWISER) \
+    X(TOKEN_ADDRESS_OF) \
     /* ================= DELIMITERS / WHITESPACE ================= */ \
     X(TOKEN_DELIM_F) \
     X(TOKEN_DELIM_N) \
