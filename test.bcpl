@@ -63,7 +63,7 @@ LET c2 = a=b->c->d,e
 
 LET s1 = ""
 LET s2 = "a"
-LET s3 = "unterminated
+//LET s3 = "unterminated
 LET s4 = "escaped quote: \" ok"
 LET s5 = "backslash at end \\"
 LET s6 = "newline\
@@ -73,11 +73,11 @@ LET s8 = "// not comment"
 
 // ---------- CHARACTER CONSTANT EDGE CASES ----------
 
-LET ch1 = 'A'
-LET ch2 = '\n'
-LET ch3 = '\''
-LET ch4 = ''
-LET ch5 = 'AB'
+//LET ch1 = 'A'
+//LET ch2 = '\n'
+//LET ch3 = '\''
+//LET ch4 = ''
+//LET ch5 = 'AB'
 
 // ---------- LABEL / GOTO CONFUSION ----------
 

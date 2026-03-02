@@ -433,7 +433,7 @@ Token stringHandler(LexerInfo *lxer)
 		
         // need to handle un terminated strings around here 
 
-	} while (c != '"' || c != '\'');
+	} while (c != '"');
 
 	return tok;
 }
