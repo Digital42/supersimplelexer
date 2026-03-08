@@ -1,5 +1,5 @@
-// ---------- COMMENT EDGE CASES USED CHATGPT TO GENERATE TOERTURE TEST ----------
-// just adding nonsense for a test
+// ---------- COMMENT EDGE CASES USED CHATGPT TO GENERATE SEMI-TORTURE TEST ----------
+
 // // nested line comment markers
 /* block comment start
    NESTED COMMENTS FAIL BECUASE THEY SHOULD WE DONT SUPPORT THAT HERE
@@ -73,11 +73,11 @@ LET s8 = "// not comment"
 
 // ---------- CHARACTER CONSTANT EDGE CASES ----------
 
-//LET ch1 = 'A'
-//LET ch2 = '\n'
-//LET ch3 = '\''
-//LET ch4 = ''
-//LET ch5 = 'AB'
+LET ch1 = 'A'
+LET ch2 = '\n'
+LET ch3 = '\''
+LET ch4 = ''
+LET ch5 = 'AB'
 
 // ---------- LABEL / GOTO CONFUSION ----------
 

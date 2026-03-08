@@ -344,9 +344,10 @@ Token nextToken(LexerInfo *lxer)
 
 	case '"':
 		return stringHandler(lxer);
-    
+
     case '\'':
-		return stringHandler(lxer);
+		return charHandler(lxer);        
+        
 	default:
 
         reportLexerError(lxer, "Out of place character");
@@ -394,6 +395,66 @@ Token delimHandler(LexerInfo *lxer)
 }
 
 /*
+ * Handles character literals enclosed in single quotes.
+ * Supports escape sequences like \" inside strings.
+ */
+Token charHandler(LexerInfo *lxer)
+{
+	Token tok = {0};
+	char c;
+	size_t len = 0;
+	tok.start = lxer->input + lxer->pos;
+	tok.length = 1;
+	tok.type = TOKEN_CHAR;
+	c = advance(lxer);
+
+	do {
+
+        //printf("top char %c\n", c);
+		if (peek(lxer) == '\0') {
+			/* Unterminated character literal; return as-is */
+            reportLexerError(lxer, "Unterminated character literal");
+			return tok;
+		}
+		
+		len++;
+        tok.length++;
+		c = advance(lxer);
+
+		if (c == '\\' && peek(lxer) == '\'') {
+			tok.length++;
+			advance(lxer);
+			//len++;
+
+        }
+		
+        if (c == '\\' && peek(lxer) == 'n') {
+				tok.length++;
+				advance(lxer);
+				//len++;
+		}
+        
+
+            
+        // need to handle other escape characters here
+		
+        // need to handle un terminated strings around here 
+
+	} while (c != '\'');
+
+	if(len > 2){
+		reportLexerError(lxer, "Malformed character literal, not a single character");	
+	}
+
+	if(tok.length == 2){
+		reportLexerError(lxer, "Malformed character literal, empty literal");	
+	}
+
+	return tok;
+}
+
+
+/*
  * Handles string literals enclosed in double quotes.
  * Supports escape sequences like \" inside strings.
  */
@@ -428,6 +489,10 @@ Token stringHandler(LexerInfo *lxer)
 				advance(lxer);
 		}
         
+		if (c == '\\' && peek(lxer) == '\\') {
+			tok.length++;
+			advance(lxer);
+		}
             
             // need to handle other escape characters here
 		
@@ -477,11 +542,7 @@ Token opHandler(LexerInfo *lxer)
 
 	switch (c) {
 	case '+':
-		if (peek(lxer) == '+') {
-			advance(lxer);
-			tok.length++;
-			tok.type = TOKEN_INCR;
-		} else if (peek(lxer) == '=') {
+		if (peek(lxer) == '=') {
 			advance(lxer);
 			tok.length++;
 			tok.type = TOKEN_PLUS_EQ;
@@ -491,11 +552,7 @@ Token opHandler(LexerInfo *lxer)
 		break;
 
 	case '-':
-		if (peek(lxer) == '-') {
-			advance(lxer);
-			tok.length++;
-			tok.type = TOKEN_DECR;
-		}else if (peek(lxer) == '=') {
+		if (peek(lxer) == '=') {
 			advance(lxer);
 			tok.length++;
 			tok.type = TOKEN_MINUS_EQ;
@@ -537,8 +594,14 @@ Token opHandler(LexerInfo *lxer)
 		break;       
 
 	case '~':
-		tok.type = TOKEN_NEGATION;
-		break;
+        if (peek(lxer) == '=') {
+            advance(lxer);
+            tok.length++;
+            tok.type = TOKEN_NOTEQ;
+        } else {
+            tok.type = TOKEN_LOGICAL_NOT;
+        }
+        break;
 
     case '!':
 		tok.type = TOKEN_INDIRECTION;
@@ -701,9 +764,11 @@ Token numHandler(LexerInfo *lxer)
                 
             case STATE_HEX:
                 if (isxdigit(c)){
+
                     //advance();
                     tok.length++;
                 }else{
+
                     //advance(); 
                     tok.length++;
                     state = STATE_ERR;

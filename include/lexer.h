@@ -60,6 +60,7 @@ typedef uint8_t bool;
     X(TOKEN_LITERAL) \
     X(TOKEN_NEGATION) \
     X(TOKEN_EQ_EQ) \
+    X(TOKEN_LOGICAL_NOT) \
     X(TOKEN_NOTEQ) \
     X(TOKEN_LTE) \
     X(TOKEN_GTE) \
@@ -151,6 +152,7 @@ Token opHandler(LexerInfo *lxer);
 Token identHandler(LexerInfo *lxer);
 Token stringHandler(LexerInfo *lxer);
 Token delimHandler(LexerInfo *lxer);
+Token charHandler(LexerInfo *lxer);
 
 void printTokenType(Token tok);
 #endif 
