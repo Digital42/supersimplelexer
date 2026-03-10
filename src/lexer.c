@@ -45,6 +45,15 @@ typedef enum {
     STATE_ERR
 } NumState;
 
+typedef enum {
+    STRING_START,
+	STRING_VALID,
+	STRING_ESCAPE,
+    STRING_ERR,
+	STRING_DONE,
+	STRING_EXIT
+} stringState;
+
 /* ============================================================
    ===================== LEXER FUNCTIONS  =====================
    ============================================================ */
@@ -83,7 +92,7 @@ LexerInfo *lexerCreate(const char *inputString)
 	lex->input = inputString;
 	lex->pos = 0;
     lex->lines = 1;
-    lex->cols = 1;
+    lex->cols = 0;
 	lex->ownsInput = false;
 
 	return lex;
@@ -199,14 +208,7 @@ Token nextToken(LexerInfo *lxer)
         tok.length++;
 
         while (!peekEoF(lxer)) {
-            /* code
-            //advance(lxer);
-            if(peek(lxer) == '\n'){
-                lxer->lines++;
-            }*/
-
             if (peek(lxer) == '*' && peekNext(lxer) == '/') {
-
                 advance(lxer);
                 advance(lxer);
                 tok.length++;
@@ -349,12 +351,11 @@ Token nextToken(LexerInfo *lxer)
 		return charHandler(lxer);        
         
 	default:
-
-        reportLexerError(lxer, "Out of place character");
 		tok.start = lxer->input + lxer->pos;
 		tok.type = TOKEN_ERR;
 		tok.length = 1;
 		advance(lxer);
+		reportLexerError(lxer, "Out of place character");
 		return tok;
 	}
 }
@@ -400,59 +401,133 @@ Token delimHandler(LexerInfo *lxer)
  */
 Token charHandler(LexerInfo *lxer)
 {
+	/*
+		TODO: ADD A WARNING TOKEN SO AN ERROR TOKEN ISNT GENERATED FOR CHARACTER LITERALS 
+		THAT ARE TOO LONG. eVENTUALLY i WANT TO DO WHAT C DOES AND JUSTCONVERT THE TWO 
+		CHARACTERS TO INTS AND ADD THEM IF THEY OVERFLOW THEY OVERFLOW JUST SHOW WARNNGS
+	*/
 	Token tok = {0};
-	char c;
-	size_t len = 0;
+	stringState state = STRING_START;
+	size_t charLitLen = 1;
+
 	tok.start = lxer->input + lxer->pos;
 	tok.length = 1;
 	tok.type = TOKEN_CHAR;
-	c = advance(lxer);
+	//char c = advance(lxer);
 
-	do {
+	while (!peekEoF(lxer) && state != STRING_EXIT) {
+		//not using c to store the previos right now but keeping it for reference for later just in case
+		//char c = advance(lxer);
+		advance(lxer);
+		switch (state) {
+			case STRING_START:
+				if (peek(lxer) == '\'') {
+					tok.type = TOKEN_ERR;
+					tok.length++;
+					state = STRING_DONE;
+					reportLexerError(lxer, "Empty Character Literal"); 
 
-        //printf("top char %c\n", c);
-		if (peek(lxer) == '\0') {
-			/* Unterminated character literal; return as-is */
-            reportLexerError(lxer, "Unterminated character literal");
-			return tok;
+				}else if (peek(lxer) == '\\'){
+					/* code */
+					state = STRING_ESCAPE;
+					tok.length++;
+				}else if (peek(lxer) == '\n') {
+					tok.type = TOKEN_ERR;
+					tok.length++;
+					//lxer->lines++;
+					state = STRING_DONE;
+					reportLexerError(lxer, "Unterminated Character Literal");
+				}else{
+					state = STRING_VALID;
+					tok.length++;
+				}
+				break;
+
+			case STRING_VALID:
+				if (peek(lxer) == '\\') {
+					state = STRING_ESCAPE;
+					tok.length++;
+					charLitLen++;
+				}else if (peek(lxer) == '\''){
+					state = STRING_DONE;
+					tok.length++;
+				}else if (peek(lxer) == '\n') {
+					tok.type = TOKEN_ERR;
+					tok.length++;
+					//lxer->lines++;
+					state = STRING_DONE;
+					reportLexerError(lxer, "Escaped newline not valid character literal");
+				}else {
+					tok.length++;
+					charLitLen++;	
+				}
+				break;	
+
+			case STRING_ESCAPE:
+			    if (peek(lxer) == '"') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == '\'') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == '\\') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == '?') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'n') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'a') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'b') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'f') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 't') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'v') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'r') {
+					state = STRING_VALID;
+					tok.length++;
+				}else{
+					tok.type = TOKEN_ERR;
+					tok.length++;
+					reportLexerError(lxer, "Malformed Escape Character"); 
+				}
+				break;
+
+			// i can get rid of this case by using do while loop. I have it this way because it wont lex right as STATE_END is applied
+			// and the last loop wont run becaue of the while condition
+			case STRING_DONE:
+				// maybe justify this case statement by processing some error state stuff here?
+				//tok.length++;
+				
+				if (charLitLen > 1)
+				{
+
+					tok.type = TOKEN_ERR;
+					reportLexerError(lxer, "Character Literal too long"); 
+				}
+				
+				state = STRING_EXIT;
+				break;				
+
+			default:
+				break;
 		}
-		
-		len++;
-        tok.length++;
-		c = advance(lxer);
-
-		if (c == '\\' && peek(lxer) == '\'') {
-			tok.length++;
-			advance(lxer);
-			//len++;
-
-        }
-		
-        if (c == '\\' && peek(lxer) == 'n') {
-				tok.length++;
-				advance(lxer);
-				//len++;
-		}
-        
-
-            
-        // need to handle other escape characters here
-		
-        // need to handle un terminated strings around here 
-
-	} while (c != '\'');
-
-	if(len > 2){
-		reportLexerError(lxer, "Malformed character literal, not a single character");	
 	}
-
-	if(tok.length == 2){
-		reportLexerError(lxer, "Malformed character literal, empty literal");	
-	}
+	
 
 	return tok;
 }
-
 
 /*
  * Handles string literals enclosed in double quotes.
@@ -461,44 +536,107 @@ Token charHandler(LexerInfo *lxer)
 Token stringHandler(LexerInfo *lxer)
 {
 	Token tok = {0};
-	char c;
+	stringState state = STRING_START;
 
 	tok.start = lxer->input + lxer->pos;
 	tok.length = 1;
 	tok.type = TOKEN_STRING;
-	c = advance(lxer);
+	//char c = advance(lxer);
 
-	do {
+	while (!peekEoF(lxer) && state != STRING_EXIT) {
+		//not using c to store the previos right now but keeping it for reference for later just in case
+		//char c = advance(lxer);
+		advance(lxer);
+		switch (state) {
+			case STRING_START:
+				if (peek(lxer) == '"') {
+					tok.type = TOKEN_ERR;
+					tok.length++;
+					state = STRING_DONE;
+					reportLexerError(lxer, "Empty String Literal");  
 
-        //printf("top char %c\n", c);
-		if (peek(lxer) == '\0') {
-			/* Unterminated string; return as-is */
-            reportLexerError(lxer, "Unterminated string literal");
-			return tok;
+				}else if (peek(lxer) == '\\'){
+					state = STRING_ESCAPE;
+					tok.length++;
+				}else{
+					state = STRING_VALID;
+					tok.length++;
+				}
+				break;
+
+			case STRING_VALID:
+				if (peek(lxer) == '\\') {
+					state = STRING_ESCAPE;
+					tok.length++;
+				}else if (peek(lxer) == '"'){
+					state = STRING_DONE;
+					tok.length++;
+				}else if (peek(lxer) == '\n') {
+					tok.type = TOKEN_ERR;
+					tok.length++;
+
+					state = STRING_DONE;
+					reportLexerError(lxer, "Unterminated String"); 
+				}else {
+					tok.length++;	
+				}
+				break;	
+
+			case STRING_ESCAPE:
+				if (peek(lxer) == '\n') {
+					state = STRING_VALID;
+					tok.length++;	
+					//lxer->lines++;				
+				}else if (peek(lxer) == '"') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == '\'') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == '\\') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == '?') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'a') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'b') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'f') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 't') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'v') {
+					state = STRING_VALID;
+					tok.length++;
+				}else if (peek(lxer) == 'r') {
+					state = STRING_VALID;
+					tok.length++;
+				}else{
+					tok.type = TOKEN_ERR;
+					tok.length++;
+					reportLexerError(lxer, "Malformed escape character"); 
+				}
+				break;
+
+			// i can get rid of this case by using do while loop. I have it this way because it wont lex right as STATE_END is applied
+			// and the last loop wont run becaue of the while condition
+			case STRING_DONE:
+				// maybe justify this case statement by processing some error state stuff here?
+				//tok.length++;
+				state = STRING_EXIT;
+				break;				
+
+			default:
+				break;
 		}
-        tok.length++;
-		c = advance(lxer);
-
-		if (c == '\\' && peek(lxer) == '"') {
-			tok.length++;
-			advance(lxer);
-        }
-		
-        if (c == '\\' && peek(lxer) == 'n') {
-				tok.length++;
-				advance(lxer);
-		}
-        
-		if (c == '\\' && peek(lxer) == '\\') {
-			tok.length++;
-			advance(lxer);
-		}
-            
-            // need to handle other escape characters here
-		
-        // need to handle un terminated strings around here 
-
-	} while (c != '"');
+	}
+	
 
 	return tok;
 }
@@ -695,7 +833,7 @@ Token numHandler(LexerInfo *lxer)
                     
                     state = STATE_ERR;
                     tok.length++;
-
+	
                     reportLexerError(lxer, "Malformed Integer Literal");  
                 }else if (c == '.'){
                     state = STATE_FLOAT;
@@ -853,7 +991,7 @@ char advance(LexerInfo *lxer)
 
     if (peek(lxer) == '\n'){
         lxer->lines++;
-        lxer->cols = 1;
+        lxer->cols = 0;
     }else{
         lxer->cols++;
     }
@@ -881,6 +1019,16 @@ char peekNext(LexerInfo *lxer)
 	if (peek(lxer) == '\0')
 		return '\0';
 	return lxer->input[lxer->pos + 1];
+}
+
+/*
+ * Returns the previous character without advancing the lexer.
+ */
+char peekPrev(LexerInfo *lxer)
+{
+	if (lxer->pos == 1)
+		return lxer->input[0];
+	return lxer->input[lxer->pos - 1];
 }
 
 /*
@@ -917,7 +1065,7 @@ void printTokenType(Token tok)
 
 void reportLexerError(LexerInfo *lex, const char *msg) {
     if (lex->errorFn) {
-        lex->errorFn(lex->lines, lex->cols, msg, lex->errorUserData, lex->input[lex->pos-1]);
+        lex->errorFn(lex->lines, lex->cols, msg, lex->errorUserData, &lex->input[lex->pos-1]);
     }
 
     // handle a fail state here right now if the functions pointer 

@@ -24,11 +24,11 @@ LET longidentifierwithmanycharacters1234567890 = 5
 // ---------- NUMERIC EDGE CASES ----------
 
 LET d1 = 0
-LET d2 = 0123        // leading zero
+LET d2 = 0123        
 LET d3 = 0xFF
 LET d4 = 0x1f
 LET d5 = 0XABC
-LET d6 = 0x          // malformed hex
+//LET d6 = 0x          // malformed hex
 LET d7 = 123abc      // number followed by identifier
 LET d8 = 9999999999999999999999999999
 
@@ -63,7 +63,7 @@ LET c2 = a=b->c->d,e
 
 LET s1 = ""
 LET s2 = "a"
-//LET s3 = "unterminated
+LET s3 = "unterminated
 LET s4 = "escaped quote: \" ok"
 LET s5 = "backslash at end \\"
 LET s6 = "newline\
@@ -73,7 +73,8 @@ LET s8 = "// not comment"
 
 // ---------- CHARACTER CONSTANT EDGE CASES ----------
 
-LET ch1 = 'A'
+LET ch1 = '
+'
 LET ch2 = '\n'
 LET ch3 = '\''
 LET ch4 = ''

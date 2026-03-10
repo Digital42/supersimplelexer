@@ -28,8 +28,6 @@ typedef uint8_t bool;
 #define MAX_IDENT_LEN 10
 
 
-
-static unsigned int hash(const char *keyword, size_t len);
 bool lookUp(const char *keyword, size_t len);
      
 #endif /* HASH_H */

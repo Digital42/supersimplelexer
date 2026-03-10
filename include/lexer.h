@@ -142,6 +142,7 @@ void reportLexerError(LexerInfo *lex, const char *msg);
 //lexer helpers
 char peek(LexerInfo *lxer);
 char peekNext(LexerInfo *lxer);
+char peekPrev(LexerInfo *lxer);
 char advance(LexerInfo *lxer);
 bool peekEoF(LexerInfo *lxer);
 

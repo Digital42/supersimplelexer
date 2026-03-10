@@ -9,7 +9,11 @@
 #include "lexer.h"
 
 void errorHandler(int line, int col, const char *msg, void *userData, const char *errChar) {
-    printf("Lexer error at %d:%d: %s @ %c\n", line, col, msg, errChar);
+	if (userData == NULL){
+		printf("Lexer error at %d:%d: %s @ %c\n", line, col, msg, *errChar);
+	}
+	
+    
 }
 
 
@@ -37,8 +41,8 @@ int main()
 			printTokenType(t);
 	}while (t.type != TOKEN_EOF);
 
-    printf("Lines: %d\n", lxer->lines);
-    printf("Col @ end: %d\n", lxer->cols);
+    printf("Lines: %ld\n", lxer->lines);
+    printf("Col @ end: %ld\n", lxer->cols);
 	lexerDestroy(lxer);
 	return 0;
 }
