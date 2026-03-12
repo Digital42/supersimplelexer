@@ -28,7 +28,7 @@ typedef struct {
    ======================= */
  
 /* reader entry point */
-bool readerInit(Reader *reader, const char *inputString);
+void readerInit(Reader *reader, const char *inputString);
 bool readerInitFromFile(Reader *reader, const char *filename);
 void readerDestroy(Reader *reader);
 
@@ -40,5 +40,8 @@ char readerPeekNext(Reader *reader);
 char readerPeekPrev(Reader *reader);
 char readerAdvance(Reader *reader);
 bool readerPeekEoF(Reader *reader);
+
+size_t readerGetCols(Reader *reader);
+size_t readerGetLines(Reader *reader);
 
 #endif 

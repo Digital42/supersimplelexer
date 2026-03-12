@@ -4,7 +4,7 @@
 * 
 * Description: Lexer project
 *
-* Notes: source file for the scanner
+* Notes: Header file for the scanner
 ******************************************************************************/
 #ifndef SCANNER_H
 #define SCANNER_H
@@ -16,8 +16,8 @@
 
 
 // i dont like this seems like its bad practice make sure to figure this out later
-bool isoctal(char c);
-bool isbinary(char c);
+int isoctal(int c);
+int isbinary(int c);
 
 typedef struct {
     const char *start;  /* star of span */
@@ -35,7 +35,9 @@ Span scanHexDigits(Reader *reader);
 Span scanBinaryDigits(Reader *reader);
 Span scanOctalDigits(Reader *reader);
 
-Span scanDigitsWhile(Reader *reader, bool (*digitPredicate)(char));
+Span scanEof(Reader *reader);
+
+Span scanDigitsWhile(Reader *reader, int (*digitPredicate)(int));
 
 /* identifier shaped things */
 Span scanIdentifier(Reader *reader);
@@ -45,6 +47,9 @@ Span scanQuotedSequence(Reader *reader, char delimiter);
 
 /* whitespace */
 Span scanWhitespace(Reader *reader, char *lastChar);
+
+/* operators */
+Span scanOperator(Reader *reader);
 
 /* single utility */
 bool scanMatchChar(Reader *reader, char expected);
@@ -61,7 +66,11 @@ bool scanIsSlash(Reader *reader);
 bool scanIsString(Reader *reader);
 bool scanIsChar(Reader *reader);
 bool scanIsEof(Reader *reader);
+int isOperator(Reader *reader);
 
-static Span scanDigitsWhile(Reader *reader, bool (*predicate)(char));
+size_t ScannerGetCols(Reader *reader);
+size_t ScannerGetLines(Reader *reader);
 
-#endif 
+//static Span scanDigitsWhile(Reader *reader, bool (*predicate)(char));
+
+#endif /* SCANNER_H */

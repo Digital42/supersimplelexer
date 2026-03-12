@@ -9,16 +9,11 @@
 #ifndef TOKENIZER_H
 #define TOKENIZER_H
 
- #include <reader.h>
+#include "scanner.h"
 #include <stddef.h>   // size_t
 #include <stdint.h>   // uint8_t, int32_t
 #include <stdio.h>
  
-// i dont like this seems like its bad practice make sure to figure this out later
-#define isoctal(c) ((c) >= '0' && (c) <= '7')
-#define isbinary(c) ((c) >= '0' && (c) <= '1')
-
-
 #define TOKEN_LIST \
     /* ================= IDENTIFIERS / LITERALS ================= */ \
     X(TOKEN_IDEN_GENERIC) \
@@ -85,7 +80,7 @@
 
 
 
-typedef void (*LexerErrorCallback)(int line, int column, const char *message, void *userData, const char *errChar);
+typedef void (*TokenErrorCallback)(int line, int column, const char *message, void *userData, const char *errChar);
 
 /* =======================
     Token and State Enums
@@ -111,9 +106,10 @@ typedef struct {
  
 typedef struct {
     Reader *reader;
-    LexerErrorCallback errorFn;  // user-supplied callback
+    TokenErrorCallback errorFn;  // user-supplied callback
     void *errorUserData;         // user data passed back to callback
 } Tokenizer;
+
 
 
 /* =======================
@@ -121,13 +117,16 @@ typedef struct {
    ======================= */
  
 //token functions and helpers
-Token tokNextToken(Reader *reader);
-Token numHandler(Reader *reader);
-Token opHandler(Reader *reader);
-Token identHandler(Reader *reader);
-Token stringHandler(Reader *reader);
-Token delimHandler(Reader *reader);
-Token charHandler(Reader *reader);
+Token tokNextToken(Tokenizer *token);
+Token numHandler(Tokenizer *token);
+Token opHandler(Tokenizer *token);
+Token identHandler(Tokenizer *token);
+Token stringHandler(Tokenizer *token);
+Token delimHandler(Tokenizer *token);
+Token charHandler(Tokenizer *token);
+Token eofHandler(Tokenizer *tok);
+void tokenizerInit(Tokenizer *Tok, Reader *reader, TokenErrorCallback errorFn, void *userData);
+
 
 void printTokenType(Token tok);
-#endif 
+#endif /* TOKENIZER_H */

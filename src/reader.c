@@ -1,11 +1,21 @@
+/******************************************************************************
+* File:        scanner.c
+* Date:        03-10-26
+* 
+* Description: Lexer project
+*
+* Notes: Reader strictly handles functions related to dealing with where and 
+*        what the currect character is for the lexer
+******************************************************************************/
 #include "reader.h"
+#include <stdlib.h>
 
 /* ============================================================
-   ===================== LEXER FUNCTIONS  =====================
+   ==================== READER FUNCTIONS  =====================
    ============================================================ */
 
 /*
- * Frees a lexer structure allocated via lexerCreate.
+ * Frees a reader structure allocated via lexerCreate.
  */
 void readerDestroy(Reader *reader)
 {
@@ -25,16 +35,11 @@ void readerDestroy(Reader *reader)
 }
 
 /*
- * Creates a lexer from a given input string.
+ * Creates a reader from a given input string.
  * Returns a pointer to a Reader structure.
  */
-Reader *readerInit(Reader *reader, const char *inputString)
+void readerInit(Reader *reader, const char *inputString)
 {
-	Reader *reader = malloc(sizeof(Reader));
-
-	if (!reader)
-		return NULL;
-
 	reader->input = inputString;
 	reader->sourceLen = 0;
 	reader->pos = 0;
@@ -42,39 +47,36 @@ Reader *readerInit(Reader *reader, const char *inputString)
 	reader->cols = 0;
 	reader->ownsInput = false;
 
-	return reader;
 }
 
 /*
- * Creates a lexer from the contents of a file.
+ * Creates a reader from the contents of a file.
  * Reads the entire file into memory, null-terminates it,
  * and returns a Reader pointer.
  */
-Reader *readerInitFromFile(Reader *reader, const char *filename)
+bool readerInitFromFile(Reader *reader, const char *filename)
 {
 	FILE *file = fopen(filename, "r");
-	Reader *reader;
 	long fileSize;
 	char *buffer;
 	size_t bytesRead = 0;
 
 	if (!file)
-		return NULL;
+		return false;
 
 	fseek(file, 0, SEEK_END);
 	fileSize = ftell(file);
 	rewind(file);
 
-
 	if (fileSize < 0) {
 		fclose(file);
-		return NULL;
+		return false;
 	}
 
 	buffer = malloc(fileSize + 1);
 	if (!buffer) {
 		fclose(file);
-		return NULL;
+		return false;
 	}
 
 	/* use bytesRead becuase on windws  text mode 'r' translates \r\n into \n
@@ -84,36 +86,37 @@ Reader *readerInitFromFile(Reader *reader, const char *filename)
 	buffer[bytesRead] = '\0';
 	fclose(file);
 
-	reader = readerCreate(buffer);
+	if (!reader) {
+		free(buffer);
+		return false;
+	}
+
+	readerInit(reader, buffer);
 
 	/*
 	 * if the lexer owners the string and then return
 	 * it so you can deallocated buffer later
 	 */
-	if (!reader) {
-		free(buffer);
-		return NULL;
-	}
 	reader->ownsInput = true;
 	// this will only work when characters are encoded in 8 bits like ansi so this wont return 
 	// the correct numbers of charcters in things like utf-8
 	reader->sourceLen = bytesRead;
-	return reader;
+	return true;
 }
 
 /* ============================================================
-   =========== LEXER POSITION CHARACTER HELPERS ===============
+   =========== READER POSITION CHARACTER HELPERS ==============
    ============================================================ */
 
 /*
- * Returns the current character and advances the lexer position.
+ * Returns the current character and advances the reader position.
  */
 char readerAdvance(Reader *reader)
 {
 	if (reader->pos >= reader->sourceLen)
 		return '\0';
 
-	if (peek(reader) == '\n') {
+	if (readerPeek(reader) == '\n') {
 		reader->lines++;
 		reader->cols = 0;
 	} else {
@@ -123,6 +126,9 @@ char readerAdvance(Reader *reader)
 	return reader->input[reader->pos++];
 }
 
+/*
+ * Returns the address of the current character. Used to slice up spans
+ */
 const char *readerCurrentPtr(Reader *reader)
 {
 	return &reader->input[reader->pos];    
@@ -142,7 +148,7 @@ char readerPeek(Reader *reader)
 /*
  * Returns the next character without advancing the lexer.
  */
-char ReaderPeekNext(Reader *reader)
+char readerPeekNext(Reader *reader)
 {
 	if (reader->pos + 1 >= reader->sourceLen)
 		return '\0';
@@ -166,5 +172,14 @@ char readerPeekPrev(Reader *reader)
  */
 bool readerPeekEoF(Reader *reader)
 {
-	return peek(reader) == '\0';
+	return readerPeek(reader) == '\0';
+}
+
+size_t readerGetCols(Reader *reader)
+{
+    return reader->cols;
+}
+size_t readerGetLines(Reader *reader)
+{
+    return reader->lines;
 }

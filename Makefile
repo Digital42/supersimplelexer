@@ -15,12 +15,18 @@ TEST_TARGET  = bin/tests.bin
 SRC_EXAMPLES = examples/main.c
 SRC_LEX      = src/lexer.c
 SRC_HASH      = src/hash.c
-SRC          = $(SRC_EXAMPLES) $(SRC_LEX) $(SRC_HASH)
+SRC_READER      = src/reader.c
+SRC_SCANNER      = src/scanner.c
+SRC_TOKENIZER      = src/tokenizer.c
+SRC          = $(SRC_EXAMPLES) $(SRC_LEX) $(SRC_HASH) $(SRC_READER) $(SRC_SCANNER) $(SRC_TOKENIZER)
 
 TEST_SRC     = tests/lexTest.c
-TEST_LEX_SRC = src/lexer.c
-TEST_HASH_SRC = src/hash.c
-TEST          = $(TEST_SRC) $(TEST_LEX_SRC) $(TEST_HASH_SRC)
+TEST_LEX_SRC = tests/lexer.c
+TEST_HASH_SRC = tests/hash.c
+TEST_READER      = tests/reader.c
+TEST_SCANNER      = tests/scanner.c
+TEST_TOKENIZER      = tests/tokenizer.c
+TEST          = $(TEST_SRC) $(TEST_LEX_SRC) $(TEST_HASH_SRC) $(TEST_HASH) $(TEST_READER) $(TEST_SCANNER) $(TEST_TOKENIZER)
 # ==========================================================
 # Object Files (compiled into bin/obj)
 # ==========================================================

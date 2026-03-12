@@ -4,46 +4,61 @@
 *
 * Description: Lexer project
 *
-* Notes: main.c is main :)
+* Notes: main.c is main :). Right now only the lexer is implimented. Its a 
+*		 standard lexer split up with a lexer module that controls and initiates
+*		 a reader, scanner, and tokenier to do normal reading, scanning, and 
+*  		 tokenizing
 ******************************************************************************/
 #include "lexer.h"
-
+#include "tokenizer.h"
 void errorHandler(int line, int col, const char *msg, void *userData, const char *errChar) {
 	if (userData == NULL){
 		printf("Lexer error at %d:%d: %s @ %c\n", line, col, msg, *errChar);
 	}
-	
-    
 }
 
 
 int main()
 {
-	/* random test strings so i dont have to keep commenting out stuff */
-	/* const char *inputString = "v1234567892"; */
-	/* const char *inputString = "var int test = 1; var float val = 4 + 3 / 5 * 7 + 5.66"; */
-	/* const char *inputString = "2.234;"; */
-
-	const char *filename = "test.bcpl";
-	LexerInfo *lxer = lexerCreateFromFile(filename);
-    lxer->errorFn = errorHandler;
-    //make sure to set the void pointer for whatever main will pass to the lexer error handler 
-    lxer->errorUserData = NULL;
+	const char *sourceFile = "test.bcpl";
+	// initiate lexer
+	Lexer lexer;
 	Token t;
 
-	do {
-		if (!lxer) {
-			printf("No file found!\n");
-			break;
-		}
-		t = nextToken(lxer);
-		if (t.type != TOKEN_DELIM_S)
-			printTokenType(t);
-	}while (t.type != TOKEN_EOF);
+	// pretty sure this sets up error handler
+	if (lexerInitFromFile(&lexer, sourceFile, errorHandler, NULL) == false) {
+        printf("Something Went wrong during lexer initiation.\n");
+        return 1;
+    }
+	
+	do
+	{
+		t = lexerNextToken(&lexer);
 
-    printf("Lines: %ld\n", lxer->lines);
-    printf("Col @ end: %ld\n", lxer->cols);
-	lexerDestroy(lxer);
+		if (t.type == TOKEN_DELIM_S)
+		{
+			printf(" space\n");
+		}else if (t.type == TOKEN_KEYWORD)
+		{
+			printf(" keyword\n");
+		}else if (t.type == TOKEN_IDEN_GENERIC)
+		{
+			printf(" identifier\n");
+		}else if (t.type == TOKEN_PLUS)
+		{
+			printf(" token plus\n");
+		}
+		
+		
+		
+		
+	} while (t.type != TOKEN_EOF);
+	
+
+	// get next token and print for now
+
+	// lexer clean up
+
 	return 0;
 }
 

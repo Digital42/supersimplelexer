@@ -11,6 +11,7 @@
 
 #include <stddef.h> 
 #include <stdint.h> 
+#include <stdbool.h>
 
 #define TOTAL_KEYWORDS 44
 #define MIN_WORD_LENGTH 2
@@ -22,7 +23,7 @@
     Basic Types
    ======================= */
 
-typedef uint8_t bool;
+
 #define true  1
 #define false 0
 #define MAX_IDENT_LEN 10

@@ -4,14 +4,16 @@
 * 
 * Description: Lexer project
 *
-* Notes: source file for the scanner
+* Notes: scanner strickly deals getting current or next character from the
+*        reader and proccesing the source input into spans of like characters
+*        to pass to the tokenizer to further validate and classify tokens
 ******************************************************************************/
 #include "scanner.h"
 #include "reader.h"
 #include <ctype.h>
 
 
-Span scanDigitsWhile(Reader *reader, bool (*digitPredicate)(char))
+Span scanDigitsWhile(Reader *reader, int (*digitPredicate)(int))
 {
     const char *start = scanCurrentPtr(reader); 
     
@@ -26,20 +28,47 @@ Span scanHexDigits(Reader *reader)      {return scanDigitsWhile(reader, isxdigit
 Span scanOctalDigits(Reader *reader)    {return scanDigitsWhile(reader, isoctal);}
 Span scanBinaryDigits(Reader *reader)   {return scanDigitsWhile(reader, isbinary);}
 
+Span scanEof(Reader *reader)
+{
+
+    const char *start = scanCurrentPtr(reader);
+
+    if (!readerPeekEoF(reader)){
+        Span span = {0};
+        return span;
+    }
+    return scanMakeSpan(start, reader);
+
+}
+
+Span scanOperator(Reader *reader)
+{
+    const char *start = scanCurrentPtr(reader);
+    //char c = readerPeek(reader);
+    while (!readerPeekEoF(reader) && isOperator((reader))) {
+        readerAdvance(reader);
+    }
+        
+    return scanMakeSpan(start, reader);
+}
 
 Span scanWhitespace(Reader *reader, char *lastChar)
 {
     const char *start = scanCurrentPtr(reader);
 
-    while (!readerPeekEoF(reader) && isspace(readerPeek(reader)))
+    while (!readerPeekEoF(reader) && isspace(readerPeek(reader))){
         *lastChar = readerPeek(reader);
+        //printf("last char:%c:\n", lastChar);
+
         readerAdvance(reader);
+    }
     
     return scanMakeSpan(start, reader);
 }
 
 Span scanQuotedSequence(Reader *reader, char delimiter)
 {
+    printf("delimiter =  %c\n", delimiter);
     const char *start = scanCurrentPtr(reader);   
     
     while (!readerPeekEoF(reader)) {
@@ -77,6 +106,8 @@ Span scanMakeSpan(const char *start, Reader *reader)
     Span span;
     span.start = start;
     span.length = (size_t)(readerCurrentPtr(reader) - start);
+
+    return span;
 }
 
 
@@ -124,12 +155,12 @@ bool scanIsEof(Reader *reader)
 }
 
 // these functions are really bad i need to replace them just keeping them for placement right now
-bool isoctal(char c)
+int isoctal(int c)
 {
     return ((c) >= '0' && (c) <= '7');
 }
 
-bool isbinary(char c)
+int isbinary(int c)
 {
     return ((c) >= '0' && (c) <= '1');    
 }
@@ -142,4 +173,36 @@ bool scanMatchChar(Reader *reader, char expected)
         return true;
     }else
         return false;
+}
+
+size_t ScannerGetCols(Reader *reader)
+{
+    return readerGetCols(reader);
+}
+size_t ScannerGetLines(Reader *reader)
+{
+    return readerGetLines(reader);
+}
+
+int isOperator(Reader *reader)
+{
+    char c = readerPeek(reader);
+
+    switch (c)
+    {
+        case '+':
+        case '-':
+        case '*':
+        case '/':
+        case '=':
+        case '<':
+        case '>':
+        case '&':
+        case '|':
+        case '~':
+        case ':':
+            return true;
+        default:
+            return false;
+    }
 }

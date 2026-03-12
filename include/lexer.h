@@ -18,15 +18,9 @@ typedef struct {
 	Tokenizer tokenizer;
 } Lexer;
 
-bool  lexerInit(Lexer *lex, const char *input);
-bool  lexerInitFromFile(Lexer *lex, const char *filename);
-void  lexerSetErrorHandler(Lexer *lex,
-			   void (*errorFn)(size_t line, size_t col,
-					   const char *msg,
-					   void *userData,
-					   const char *src),
-			   void *userData);
+bool  lexerInit(Lexer *lex, const char *filename, TokenErrorCallback errorFn, void *userData);
+bool  lexerInitFromFile(Lexer *lex, const char *filename, TokenErrorCallback errorFn, void *userData);
 Token lexerNextToken(Lexer *lex);
-void  lexerCleanup(Lexer *lex);
+void  lexerCleanUp(Lexer *lex);
 
-#endif
+#endif /* LEXER_H */
