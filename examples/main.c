@@ -11,10 +11,15 @@
 ******************************************************************************/
 #include "lexer.h"
 #include "tokenizer.h"
-void errorHandler(int line, int col, const char *msg, void *userData, const char *errChar) {
-	if (userData == NULL){
-		printf("Lexer error at %d:%d: %s @ %c\n", line, col, msg, *errChar);
+
+void errorHandler(size_t line, size_t col, const char *msg, void *userData, const char *errChar) {
+	if (userData == NULL) {
+		printf("No user data supplied\n");
 	}
+	Span *newSpan = (Span*)userData;
+	
+	printf("Lexer error at %zu:%zu: %s @ %c -> ", line, col, msg, *errChar);
+	printf("%.*s\n", newSpan->length, newSpan->start);
 }
 
 
@@ -35,7 +40,7 @@ int main()
 	{
 		t = lexerNextToken(&lexer);
 
-		if (t.type == TOKEN_DELIM_S)
+		/*if (t.type == TOKEN_DELIM_S)
 		{
 			printf(" space\n");
 		}else if (t.type == TOKEN_KEYWORD)
@@ -47,6 +52,20 @@ int main()
 		}else if (t.type == TOKEN_PLUS)
 		{
 			printf(" token plus\n");
+		}else if (t.type == TOKEN_STRING)
+		{
+			printf(" token string\n");
+		}*/
+		if (t.type == TOKEN_EOF)
+		{
+			// do nothing 
+		}else if (t.type == TOKEN_ERR)
+		{
+			printf("Token Error\n");
+		}
+		
+		else{
+			printFormatted(t.start, t.length);
 		}
 		
 		

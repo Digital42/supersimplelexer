@@ -80,7 +80,7 @@
 
 
 
-typedef void (*TokenErrorCallback)(int line, int column, const char *message, void *userData, const char *errChar);
+typedef void (*TokenErrorCallback)(size_t line, size_t column, const char *message, void *userData, const char *errChar);
 
 /* =======================
     Token and State Enums
@@ -97,7 +97,6 @@ typedef enum {
  /* =======================
         Lexer Structs
     ======================= */
-
 typedef struct {
     TokenType type;
     const char *start; // points into lexer->input
@@ -127,6 +126,10 @@ Token charHandler(Tokenizer *token);
 Token eofHandler(Tokenizer *tok);
 void tokenizerInit(Tokenizer *Tok, Reader *reader, TokenErrorCallback errorFn, void *userData);
 
+void reportTokenError(Tokenizer *tok, size_t line, size_t row, const char *msg, const char *current);
+
+
+void printFormatted(const char *tokStr, int length);
 
 void printTokenType(Token tok);
 #endif /* TOKENIZER_H */
