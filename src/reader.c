@@ -9,13 +9,17 @@
 ******************************************************************************/
 #include "reader.h"
 #include <stdlib.h>
-
 /* ============================================================
    ==================== READER FUNCTIONS  =====================
    ============================================================ */
-
-/*
- * Frees a reader structure allocated via lexerCreate.
+ 
+/**
+ * readerDestroy() - Release resources owned by a Reader.
+ * @reader: Reader to destroy.  Does nothing if NULL.
+ *
+ * Only frees the input buffer when ownsInput is true, which is the case
+ * when the buffer was allocated by readerInitFromFile().  Caller-supplied
+ * strings (initialised via readerInit()) are never freed here.
  */
 void readerDestroy(Reader *reader)
 {
@@ -34,9 +38,19 @@ void readerDestroy(Reader *reader)
 	free(reader);
 }
 
-/*
- * Creates a reader from a given input string.
- * Returns a pointer to a Reader structure.
+/**
+ * readerInit() - Initialise a Reader over a caller-supplied string.
+ * @reader:      Reader instance to initialise.
+ * @inputString: Null-terminated source string; must remain valid for the
+ *               lifetime of the Reader.
+ *
+ * The Reader does not take ownership of @inputString; the caller is
+ * responsible for keeping it alive and freeing it if necessary.
+ * ownsInput is set to false to reflect this.
+ *
+ * Note: sourceLen is left at 0 here.  Callers that need an accurate
+ * character count (e.g. for bounds checks) should set it explicitly after
+ * this call, or use readerInitFromFile() which sets it from the file size.
  */
 void readerInit(Reader *reader, const char *inputString)
 {
@@ -49,10 +63,27 @@ void readerInit(Reader *reader, const char *inputString)
 
 }
 
-/*
- * Creates a reader from the contents of a file.
- * Reads the entire file into memory, null-terminates it,
- * and returns a Reader pointer.
+/**
+ * readerInitFromFile() - Initialise a Reader by loading a file into memory.
+ * @reader:   Reader instance to initialise.
+ * @filename: Path to the source file to read.
+ *
+ * Opens @filename in text mode, allocates a heap buffer large enough for
+ * the entire contents, reads the file, and null-terminates the buffer.
+ * The Reader takes ownership of the buffer (ownsInput = true), so
+ * readerDestroy() will free it.
+ *
+ * Note: ftell() reports the byte offset in the file, but on Windows text
+ * mode translates \r\n to \n during fread(), so bytesRead may be smaller
+ * than fileSize.  The null terminator is therefore placed at buffer[bytesRead]
+ * rather than buffer[fileSize].
+ *
+ * Note: sourceLen reflects bytes read, not Unicode characters.  This is
+ * correct for ANSI/ASCII source but will give wrong character counts for
+ * multi-byte encodings such as UTF-8.
+ *
+ * Return: true on success; false if the file could not be opened, if
+ *         ftell() fails, if malloc() fails, or if @reader is NULL.
  */
 bool readerInitFromFile(Reader *reader, const char *filename)
 {
@@ -108,8 +139,15 @@ bool readerInitFromFile(Reader *reader, const char *filename)
    =========== READER POSITION CHARACTER HELPERS ==============
    ============================================================ */
 
-/*
- * Returns the current character and advances the reader position.
+/**
+ * readerAdvance() - Return the current character and move the position forward.
+ * @reader: Active Reader.
+ *
+ * Updates the line and column counters before advancing:
+ *   - A '\n' character increments lines and resets cols to 0.
+ *   - Any other character increments cols.
+ *
+ * Return: The character at the current position, or '\0' if already at EOF.
  */
 char readerAdvance(Reader *reader)
 {
@@ -126,16 +164,26 @@ char readerAdvance(Reader *reader)
 	return reader->input[reader->pos++];
 }
 
-/*
- * Returns the address of the current character. Used to slice up spans
+/**
+ * readerCurrentPtr() - Return a pointer to the current character in the buffer.
+ * @reader: Active Reader.
+ *
+ * Used by the scanner to record the start of a lexeme before advancing,
+ * so that a Span can be formed by comparing this pointer with the position
+ * after scanning completes.
+ *
+ * Return: Pointer into the source buffer at the current read position.
  */
 const char *readerCurrentPtr(Reader *reader)
 {
 	return &reader->input[reader->pos];    
 }
 
-/*
- * Returns the current character without advancing the lexer.
+/**
+ * readerPeek() - Return the current character without advancing.
+ * @reader: Active Reader.
+ *
+ * Return: The character at the current position, or '\0' at EOF.
  */
 char readerPeek(Reader *reader)
 {
@@ -145,8 +193,14 @@ char readerPeek(Reader *reader)
 	return reader->input[reader->pos];
 }
 
-/*
- * Returns the next character without advancing the lexer.
+/**
+ * readerPeekNext() - Return the character one position ahead without advancing.
+ * @reader: Active Reader.
+ *
+ * Used for two-character lookahead (e.g. distinguishing // from /,
+ * or -> from -).
+ *
+ * Return: The character one position ahead, or '\0' if at or past EOF.
  */
 char readerPeekNext(Reader *reader)
 {
@@ -156,9 +210,17 @@ char readerPeekNext(Reader *reader)
 	return reader->input[reader->pos + 1];
 }
 
-/*
- * Returns the previous character without advancing the lexer might
- * be useless if you do somethin like char c = advance(lxer) in loops
+/**
+ * readerPeekPrev() - Return the most recently consumed character.
+ * @reader: Active Reader.
+ *
+ * Useful for context-sensitive checks after an advance.  Note that if the
+ * caller saves the return value of readerAdvance() there is generally no
+ * need to call this function.
+ * TODO: delete this whole function as I dont think I have used it since I 
+ *       added it in for this version of the lexer
+ * Return: The character before the current position, or the first character
+ *         of the buffer if the position is at the beginning.
  */
 char readerPeekPrev(Reader *reader)
 {
@@ -167,18 +229,27 @@ char readerPeekPrev(Reader *reader)
 	return reader->input[reader->pos - 1];
 }
 
-/*
- * Returns true if the lexer has reached the end of the input.
+/**
+ * readerPeekEoF() - Return true if the Reader has reached end-of-file.
+ * @reader: Active Reader.
+ *
+ * Delegates to readerPeek(); EOF is signalled by a '\0' at the current
+ * position, which readerPeek() returns when pos >= sourceLen.
+ *
+ * Return: true if at EOF, false otherwise.
  */
 bool readerPeekEoF(Reader *reader)
 {
 	return readerPeek(reader) == '\0';
 }
 
+/* Return the current column number (1-based distance from the last newline). */
 size_t readerGetCols(Reader *reader)
 {
     return reader->cols;
 }
+
+/* Return the current line number (1-based, incremented on each '\n'). */
 size_t readerGetLines(Reader *reader)
 {
     return reader->lines;

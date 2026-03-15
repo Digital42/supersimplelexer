@@ -17,56 +17,83 @@
 #include <math.h>
 #include <stdlib.h>
 
-
+/**
+ * lexerInit() - Initialise a Lexer from a null-terminated input string.
+ * @lex:      Lexer instance to initialise.
+ * @input:    Null-terminated source string to lex.
+ * @errorFn:  Error callback invoked on malformed tokens; must not be NULL.
+ * @userData: Opaque pointer forwarded to @errorFn.
+ *
+ * Return: true on success, false if any required argument is NULL.
+ */
 bool  lexerInit(Lexer *lex, const char *input, TokenErrorCallback errorFn, void *userData)
 {
 	userData = NULL;
-	//printf("not file\n");
 	if (!lex || !input || !errorFn)
 	{
 		return false;
 	}
 
 	readerInit(&lex->reader, input);
-	// init tokenizer
 	tokenizerInit(&lex->tokenizer, &lex->reader, errorFn, userData);
 
 	return true;
 }
 
+/**
+ * lexerInitFromFile() - Initialise a Lexer from a source file.
+ * @lex:      Lexer instance to initialise.
+ * @filename: Path to the source file to lex.
+ * @errorFn:  Error callback invoked on malformed tokens; must not be NULL.
+ * @userData: Opaque pointer forwarded to @errorFn.
+ *
+ * Opens and maps @filename via readerInitFromFile().  If the file cannot
+ * be opened or read, the function returns false and the Lexer is left
+ * uninitialised.
+ *
+ * Return: true on success, false if any required argument is NULL or if
+ *         the file could not be opened.
+ */
 bool lexerInitFromFile(Lexer *lex, const char *filename, TokenErrorCallback errorFn, void *userData)
 {
 	userData = NULL;
-	//printf("file\n");
 	if (!lex || !filename || !errorFn){
 		return false;
 	}
-	//printf("file2\n");
 	if(readerInitFromFile(&lex->reader, filename)){
 		tokenizerInit(&lex->tokenizer, &lex->reader, errorFn, userData);
 		return true;
-	}else {
-		//printf("file3\n");
-	// init tokenizer
-	//tokenizerInit(&lex->tokenizer, errorFn, userData);
-	//printf("file4\n");
-	return false;
 	}
 
+	return false;
 }
 
-
+/**
+ * lexerNextToken() - Return the next token from the input.
+ * @lex: Initialised Lexer.
+ *
+ * Delegates directly to the underlying Tokenizer.  Call repeatedly
+ * until the returned token's type is TOKEN_EOF.
+ *
+ * Return: The next Token in the input stream.
+ */
 Token lexerNextToken(Lexer *lex)
 {
-	//printf("lexer next call\n");
 	return tokNextToken(&lex->tokenizer);
 }
 
+/**
+ * lexerCleanUp() - Release resources held by the Lexer.
+ * @lex: Lexer to clean up.  Does nothing if NULL.
+ *
+ * Destroys the underlying Reader (freeing any file-backed buffer).
+ * The Tokenizer holds no resources of its own so it does not need
+ * an explicit teardown call.
+ */
 void lexerCleanUp(Lexer *lex)
 {
 	if (!lex)
 		return;
 
 	readerDestroy(&lex->reader);
-	
 }

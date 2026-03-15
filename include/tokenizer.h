@@ -14,6 +14,10 @@
 #include <stdint.h>   // uint8_t, int32_t
 #include <stdio.h>
  
+/* =======================
+    Token and State Enums
+   ======================= */
+
 #define TOKEN_LIST \
     /* ================= IDENTIFIERS / LITERALS ================= */ \
     X(TOKEN_IDEN_GENERIC) \
@@ -78,13 +82,7 @@
     X(TOKEN_UNKNOWN) \
     X(TOKEN_COMMENT) \
 
-
-
 typedef void (*TokenErrorCallback)(size_t line, size_t column, const char *message, void *userData, const char *errChar);
-
-/* =======================
-    Token and State Enums
-   ======================= */
 
 typedef enum {
     #define X(name) name,
@@ -95,7 +93,7 @@ typedef enum {
  
 
  /* =======================
-        Lexer Structs
+        Tokenizer Structs
     ======================= */
 typedef struct {
     TokenType type;
@@ -110,26 +108,28 @@ typedef struct {
 } Tokenizer;
 
 
-
 /* =======================
           Prototypes         
    ======================= */
  
 //token functions and helpers
-Token tokNextToken(Tokenizer *token);
-Token numHandler(Tokenizer *token);
-Token opHandler(Tokenizer *token);
-Token identHandler(Tokenizer *token);
-Token stringHandler(Tokenizer *token);
-Token delimHandler(Tokenizer *token);
-Token charHandler(Tokenizer *token);
+Token tokNextToken(Tokenizer *tok);
+Token numHandler(Tokenizer *tok);
+Token opHandler(Tokenizer *tok);
+Token identHandler(Tokenizer *tok);
+Token stringHandler(Tokenizer *tok);
+void delimHandler(Tokenizer *tok);
+Token charHandler(Tokenizer *tok);
+Token commentHandler(Tokenizer *tok);
 Token eofHandler(Tokenizer *tok);
+
+// creates a tokenizers and sets default values
 void tokenizerInit(Tokenizer *Tok, Reader *reader, TokenErrorCallback errorFn, void *userData);
 
+// error reporting functions
 void reportTokenError(Tokenizer *tok, size_t line, size_t row, const char *msg, const char *current);
 
-
+// debug and display functions
 void printFormatted(const char *tokStr, int length);
-
 void printTokenType(Token tok);
 #endif /* TOKENIZER_H */

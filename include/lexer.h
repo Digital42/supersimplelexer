@@ -13,6 +13,9 @@
 #include "tokenizer.h"
 #include <stdbool.h>
 
+/* =======================
+        Lexer Struct
+  ======================= */
 typedef struct {
 	Reader    reader;
 	Tokenizer tokenizer;

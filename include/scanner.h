@@ -39,11 +39,16 @@ typedef struct {
           Prototypes         
    ======================= */
 
+Span scanCommentSequence(Reader *reader);   
+
+   
 /* digits and numeric looking things */
 Span scanDigits(Reader *reader);
 Span scanHexDigits(Reader *reader);
 Span scanBinaryDigits(Reader *reader);
 Span scanOctalDigits(Reader *reader);
+
+
 
 Span scanEof(Reader *reader);
 
@@ -76,7 +81,8 @@ bool scanIsSlash(Reader *reader);
 bool scanIsString(Reader *reader);
 bool scanIsChar(Reader *reader);
 bool scanIsEof(Reader *reader);
-int isOperator(Reader *reader);
+bool scanIsComment(Reader *reader);
+bool isOperator(Reader *reader);
 
 size_t ScannerGetCols(Reader *reader);
 size_t ScannerGetLines(Reader *reader);

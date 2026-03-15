@@ -1,2 +1,7 @@
-LET + LET cant "ab\"c" "a 
+// test comment
+/* multi
+line
+*/
+'ab'
+LET +:=+/ LET cant "ab\"c" "a 
 "c"

@@ -1,2 +1,2 @@
 # supersimplelexer
-A very simple lexer project that I hope will turn into some sort of compiler for the bcpl language.
+Eventual bcpl compiler. Right now only a standard reader/scanner/tokenizer based lexer is implemented.
